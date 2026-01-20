@@ -10,7 +10,6 @@ from flask import Flask
 TOKEN = os.getenv('BOT_TOKEN') or os.getenv('TOKEN')
 SHEET_ID = os.getenv('SHEET_ID')
 GH_TOKEN = os.getenv('GH_TOKEN')
-ADMIN_ID = 7346983056
 REPO_NAME = "NgDanhThanhTrung/locket_"
 PORT = int(os.environ.get("PORT", 8000))
 
@@ -65,15 +64,46 @@ deleteHeader = type=http-request, pattern=^https:\\/\\/api\\.revenuecat\\.com\\/
 hostname = %APPEND% api.revenuecat.com"""
 
 # --- 3. HÀM HỖ TRỢ ---
+def is_admin(user_id: int) -> bool:
+    """
+    Check admin theo Telegram user_id
+    Sheet 'admin':
+      - Cột A: user_id (dùng để check)
+      - Cột B: username (chỉ để nhìn, KHÔNG dùng)
+    """
+    try:
+        if user_id is None:
+            return False
+
+        _, _, s_a = get_sheets()
+        if s_a is None:
+            return False
+        admin_ids = s_a.col_values(1)[1:]
+        return str(user_id) in admin_ids
+
+    except Exception as e:
+        logging.error(f"is_admin failed | user_id={user_id} | {e}")
+        return False
 def get_sheets():
     try:
-        scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-        creds = ServiceAccountCredentials.from_json_keyfile_dict(json.loads(os.getenv('GOOGLE_CREDS')), scope)
+        scope = [
+            "https://spreadsheets.google.com/feeds",
+            "https://www.googleapis.com/auth/drive"
+        ]
+        creds = ServiceAccountCredentials.from_json_keyfile_dict(
+            json.loads(os.getenv('GOOGLE_CREDS')),
+            scope
+        )
         ss = gspread.authorize(creds).open_by_key(SHEET_ID)
-        return ss.worksheet("modules"), ss.worksheet("users")
+
+        return (
+            ss.worksheet("modules"),
+            ss.worksheet("users"),
+            ss.worksheet("admin")
+        )
     except Exception as e:
         logging.error(f"Sheet Error: {e}")
-        return None, None
+        return None, None, None
 
 def get_combined_kb(include_list=False):
     kb = []
@@ -86,19 +116,19 @@ def get_combined_kb(include_list=False):
 async def auto_reg(u: Update):
     user = u.effective_user
     if not user: return
-    _, s_u = get_sheets()
+    _, s_u, _ = get_sheets()
     try:
         if str(user.id) not in s_u.col_values(1):
             s_u.append_row([str(user.id), user.full_name, f"@{user.username}" if user.username else "N/A"])
     except: pass
 
 async def send_module_list(u: Update, c: ContextTypes.DEFAULT_TYPE):
-    s_m, s_u = get_sheets()
+    s_m, s_u, _ = get_sheets()
     if not s_m: return
     m_list = "<b>📂 DANH SÁCH MODULE HỆ THỐNG:</b>\n\n" + "\n".join([f"🔹 /{r['key']} - {r['title']}" for r in s_m.get_all_records()])
     target = u.message if u.message else u.callback_query.message
     await target.reply_text(m_list, parse_mode=ParseMode.HTML)
-    if u.effective_user.id == ADMIN_ID and u.message:
+    if is_admin(u.effective_user.id) and u.message:
         users = s_u.get_all_records()
         u_list = "<b>👥 DANH SÁCH USER:</b>\n\n" + "\n".join([f"👤 {r['name']} ({r.get('username', 'N/A')})" for r in users])
         await u.message.reply_text(u_list, parse_mode=ParseMode.HTML)
@@ -111,20 +141,29 @@ async def start(u: Update, c: ContextTypes.DEFAULT_TYPE):
 
 async def hdsd(u: Update, c: ContextTypes.DEFAULT_TYPE):
     await auto_reg(u)
+
     user_id = u.effective_user.id
+
     txt = (
         "📖 <b>HƯỚNG DẪN SỬ DỤNG:</b>\n\n"
         "🔹 <b>MODULE CÓ SẴN:</b>\n"
-        "Nhấn nút 'Danh sách Module' hoặc gõ /list. Sau đó gõ <code>/[tên_module]</code> để lấy link.\n\n"
+        "Nhấn nút 'Danh sách Module' hoặc gõ /list. "
+        "Sau đó gõ <code>/[tên_module]</code> để lấy link.\n\n"
         "🔹 <b>TẠO MODULE LOCKET RIÊNG:</b>\n"
         "Cú pháp: <code>/get tên_user | yyyy-mm-dd</code>\n"
         "<i>Ví dụ: /get ndtt | 2025-01-16</i>\n"
         "• Tên user: viết liền không dấu.\n"
         "• Ngày: Năm-Tháng-Ngày (đăng ký)."
     )
-    if user_id == ADMIN_ID:
-        txt += "\n\n⚡ <b>ADMIN:</b> /setlink, /broadcast, /delmodule"
-    await u.message.reply_text(txt, parse_mode=ParseMode.HTML, reply_markup=get_combined_kb())
+
+    if is_admin(user_id):
+        txt += "\n\n⚡ <b>ADMIN:</b>\n/setlink\n/delmodule\n/broadcast\n/stats"
+
+    await u.message.reply_text(
+        txt,
+        parse_mode=ParseMode.HTML,
+        reply_markup=get_combined_kb()
+    )
 
 async def get_bundle(u: Update, c: ContextTypes.DEFAULT_TYPE):
     await auto_reg(u)
@@ -148,10 +187,12 @@ async def get_bundle(u: Update, c: ContextTypes.DEFAULT_TYPE):
 
 # --- LỆNH ADMIN BỔ SUNG ---
 async def set_link(u: Update, c: ContextTypes.DEFAULT_TYPE):
-    if u.effective_user.id != ADMIN_ID: return
+    if not is_admin(u.effective_user.id):
+        await u.message.reply_text("❌ Lệnh này chỉ dành cho admin.")
+        return
     try:
         k, t, l = [a.strip() for a in " ".join(c.args).split("|")]
-        s_m, _ = get_sheets()
+        s_m, _, _ = get_sheets()
         cell = s_m.find(k.lower(), in_column=1)
         if cell: s_m.update(f'B{cell.row}:C{cell.row}', [[t, l]])
         else: s_m.append_row([k.lower(), t, l])
@@ -159,8 +200,13 @@ async def set_link(u: Update, c: ContextTypes.DEFAULT_TYPE):
     except: await u.message.reply_text("❌ Cú pháp: /setlink key | Tên | URL")
 
 async def del_mod(u: Update, c: ContextTypes.DEFAULT_TYPE):
-    if u.effective_user.id != ADMIN_ID or not c.args: return
-    s_m, _ = get_sheets()
+    if not is_admin(u.effective_user.id):
+        await u.message.reply_text("❌ Lệnh này chỉ dành cho admin.")
+        return
+    if not c.args:
+        return
+
+    s_m, _, _ = get_sheets()
     try:
         cell = s_m.find(c.args[0].lower(), in_column=1)
         if cell: s_m.delete_rows(cell.row); await u.message.reply_text(f"🗑 Đã xóa module: {c.args[0]}")
@@ -168,9 +214,14 @@ async def del_mod(u: Update, c: ContextTypes.DEFAULT_TYPE):
     except Exception as e: await u.message.reply_text(f"❌ Lỗi: {e}")
 
 async def broadcast(u: Update, c: ContextTypes.DEFAULT_TYPE):
-    if u.effective_user.id != ADMIN_ID or not c.args: return
+    if not is_admin(u.effective_user.id):
+        await u.message.reply_text("❌ Lệnh này chỉ dành cho admin.")
+        return
+    if not c.args:
+        return
+
     msg = " ".join(c.args)
-    _, s_u = get_sheets()
+    _, s_u, _ = get_sheets()
     users = s_u.col_values(1)[1:]
     count = 0
     for uid_str in users:
@@ -185,14 +236,44 @@ async def handle_callback(u: Update, c: ContextTypes.DEFAULT_TYPE):
     await u.callback_query.answer()
     if u.callback_query.data == "show_list": await send_module_list(u, c)
 
+async def myid(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(
+        f"🆔 ID Telegram của bạn là:\n`{update.effective_user.id}`",
+        parse_mode=ParseMode.MARKDOWN
+    )
+async def stats(u: Update, c: ContextTypes.DEFAULT_TYPE):
+    if not is_admin(u.effective_user.id):
+        await u.message.reply_text("❌ Lệnh này chỉ dành cho admin.")
+        return
+
+    try:
+        s_m, s_u, s_a = get_sheets()
+        total_modules = len(s_m.get_all_records())
+        total_users = len(s_u.col_values(1)) - 1
+        total_admins = len(s_a.col_values(1)) - 1
+
+        text = (
+            "📊 <b>THỐNG KÊ HỆ THỐNG</b>\n\n"
+            f"👥 User: <b>{total_users}</b>\n"
+            f"📦 Module: <b>{total_modules}</b>\n"
+            f"👑 Admin: <b>{total_admins}</b>"
+        )
+        await u.message.reply_text(text, parse_mode=ParseMode.HTML)
+    except Exception as e:
+        await u.message.reply_text(f"❌ Lỗi stats: {e}")
+
+
 async def handle_msg(u: Update, c: ContextTypes.DEFAULT_TYPE):
     await auto_reg(u)
-    if not u.message.text or not u.message.text.startswith('/'): return
-    cmd = u.message.text.replace("/", "").lower().split('@')[0]
-    
-    if cmd in ["start", "hdsd", "list", "get", "setlink", "delmodule", "broadcast"]: return
 
-    s_m, _ = get_sheets()
+    if not u.message or not u.message.text or not u.message.text.startswith('/'):
+        return
+
+    cmd = u.message.text.replace("/", "").lower().split('@')[0]
+
+    if cmd in ["start", "hdsd", "list", "get", "setlink", "delmodule", "broadcast", "stats", "stats"]:
+        return
+    s_m, _, _ = get_sheets()
     db = {r['key'].lower(): r for r in s_m.get_all_records()}
     if cmd in db:
         item = db[cmd]
@@ -228,7 +309,7 @@ async def post_init(app):
 if __name__ == "__main__":
     threading.Thread(target=lambda: server.run(host="0.0.0.0", port=PORT), daemon=True).start()
     app = ApplicationBuilder().token(TOKEN).post_init(post_init).build()
-    
+    app.add_handler(CommandHandler("myid", myid))
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("hdsd", hdsd))
     app.add_handler(CommandHandler("list", send_module_list))
@@ -238,4 +319,5 @@ if __name__ == "__main__":
     app.add_handler(CommandHandler("broadcast", broadcast))
     app.add_handler(CallbackQueryHandler(handle_callback))
     app.add_handler(MessageHandler(filters.COMMAND, handle_msg))
+    app.add_handler(CommandHandler("stats", stats))
     app.run_polling(drop_pending_updates=True)
