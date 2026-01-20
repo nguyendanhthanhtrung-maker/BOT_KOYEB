@@ -123,16 +123,20 @@ def is_admin(user_id: int) -> bool:
 
 # ================= UI =================
 def get_kb(include_list=False):
+    contact_url = globals().get('CONTACT_URL', 'https://t.me/NgDanhThanhTrung')
+    donate_url = globals().get('DONATE_URL', 'https://ngdanhthanhtrung.github.io/Bank/')
+    web_url = globals().get('WEB_URL', 'https://ngdanhthanhtrung.github.io/Modules-NDTT-Premium/')
+
     kb = []
     if include_list:
         kb.append([InlineKeyboardButton("📂 Danh sách Module", callback_data="show_list")])
     kb.append([
-        InlineKeyboardButton("💬 Liên hệ", url=CONTACT_URL),
-        InlineKeyboardButton("☕ Donate", url=DONATE_URL)
+        InlineKeyboardButton("💬 Liên hệ", url=contact_url),
+        InlineKeyboardButton("☕ Donate", url=donate_url)
     ])
-    kb.append([InlineKeyboardButton("✨ Web Hướng Dẫn", url=WEB_URL)])
+    kb.append([InlineKeyboardButton("✨ Web Hướng Dẫn", url=web_url)])
+    
     return InlineKeyboardMarkup(kb)
-
 async def auto_reg(u: Update):
     user = u.effective_user
     if not user: return
@@ -155,7 +159,12 @@ async def send_module_list(u: Update, c: ContextTypes.DEFAULT_TYPE):
 
 # --- 4. LỆNH BOT ---
 async def start(u: Update, c: ContextTypes.DEFAULT_TYPE):
-    await auto_reg(u)
+    try:
+        await auto_reg(u)
+    except Exception as e:
+        import logging
+        logging.error(f"Lỗi lưu thông tin user: {e}")
+
     user_name = u.effective_user.first_name
     txt = (
         f"👋 Chào mừng <b>{user_name}</b> đến với Bot của NgDanhThanhTrung!\n\n"
@@ -163,20 +172,27 @@ async def start(u: Update, c: ContextTypes.DEFAULT_TYPE):
         f"🔹 Nhấn nút <b>Danh sách Module</b> bên dưới để xem các script có sẵn.\n"
         f"🔹 Gõ /hdsd để xem cách cài đặt HTTPS Decryption."
     )
-    await u.message.reply_text(
-        txt, 
-        parse_mode=ParseMode.HTML, 
-        reply_markup=get_kb(include_list=True) 
-    )
+
+    try:
+        await u.message.reply_text(
+            txt, 
+            parse_mode=ParseMode.HTML, 
+            reply_markup=get_kb(include_list=True) 
+        )
+    except Exception as e:
+        await u.message.reply_text(txt.replace("<b>","").replace("</b>",""), reply_markup=get_kb(include_list=True))
 async def hdsd(u: Update, c: ContextTypes.DEFAULT_TYPE):
-    await auto_reg(u)
+    try:
+        await auto_reg(u)
+    except Exception as e:
+        logging.error(f"Lỗi đăng ký user: {e}")
 
     user_id = u.effective_user.id
 
     txt = (
         "📖 <b>HƯỚNG DẪN SỬ DỤNG:</b>\n\n"
         "🔹 <b>MODULE CÓ SẴN:</b>\n"
-        "Nhấn nút 'Danh sách Module' hoặc gõ /list. "
+        "Nhấn nút 'Danh sách Module' hoặc gõ /list.\n"
         "Sau đó gõ <code>/[tên_module]</code> để lấy link.\n\n"
         "🔹 <b>TẠO MODULE LOCKET RIÊNG:</b>\n"
         "Cú pháp: <code>/get tên_user | yyyy-mm-dd</code>\n"
@@ -184,16 +200,19 @@ async def hdsd(u: Update, c: ContextTypes.DEFAULT_TYPE):
         "• Tên user: viết liền không dấu.\n"
         "• Ngày: Năm-Tháng-Ngày (đăng ký)."
     )
-
     if is_admin(user_id):
-        txt += "\n\n⚡ <b>ADMIN:</b>\n/setlink\n/delmodule\n/broadcast\n/stats"
-
+        txt += (
+            "\n\n⚡ <b>QUYỀN ADMIN:</b>\n"
+            "• <code>/stats</code> - Xem thống kê\n"
+            "• <code>/broadcast</code> - Gửi thông báo\n"
+            "• <code>/setlink</code> - Thêm module\n"
+            "• <code>/delmodule</code> - Xóa module"
+        )
     await u.message.reply_text(
         txt,
         parse_mode=ParseMode.HTML,
-        reply_markup=get_combined_kb()
+        reply_markup=get_kb() 
     )
-
 async def get_bundle(u: Update, c: ContextTypes.DEFAULT_TYPE):
     await auto_reg(u)
     raw_text = " ".join(c.args)
