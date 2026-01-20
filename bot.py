@@ -1,31 +1,46 @@
-import os, json, logging, gspread, threading, asyncio
+import os, json, logging, threading, asyncio, re
+import gspread
+from functools import lru_cache
+from datetime import datetime
 from oauth2client.service_account import ServiceAccountCredentials
 from github import Github
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, BotCommand
+from telegram import (
+    Update,
+    InlineKeyboardButton,
+    InlineKeyboardMarkup,
+    BotCommand
+)
 from telegram.constants import ParseMode
-from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler, MessageHandler, CallbackQueryHandler, filters
+from telegram.ext import (
+    ApplicationBuilder,
+    ContextTypes,
+    CommandHandler,
+    MessageHandler,
+    CallbackQueryHandler,
+    filters
+)
 from flask import Flask
 
-# --- 1. CẤU HÌNH ---
-TOKEN = os.getenv('BOT_TOKEN') or os.getenv('TOKEN')
-SHEET_ID = os.getenv('SHEET_ID')
-GH_TOKEN = os.getenv('GH_TOKEN')
+# ================= CONFIG =================
+TOKEN = os.getenv("BOT_TOKEN") or os.getenv("TOKEN")
+SHEET_ID = os.getenv("SHEET_ID")
+GH_TOKEN = os.getenv("GH_TOKEN")
 REPO_NAME = "NgDanhThanhTrung/locket_"
-PORT = int(os.environ.get("PORT", 8000))
-
+PORT = int(os.getenv("PORT", "8000"))
 CONTACT_URL = "https://t.me/NgDanhThanhTrung"
 DONATE_URL = "https://ngdanhthanhtrung.github.io/Bank/"
 WEB_URL = "https://ngdanhthanhtrung.github.io/Modules-NDTT-Premium/"
 
-logging.basicConfig(format='%(asctime)s - %(message)s', level=logging.INFO)
+logging.basicConfig(level=logging.INFO)
 
-# --- 2. TEMPLATES ---
+# ================= TEMPLATE =================
 JS_TEMPLATE = """// ========= ID ========= //
 const mapping = {{
   '%E8%BD%A6%E7%A5%A8%E7%A5%A8': ['vip+watch_vip'],
   'Locket': ['Gold']
 }};
-var ua=$request.headers["User-Agent"]||$request.headers["user-agent"],obj=JSON.parse($response.body);
+var ua=$request.headers["User-Agent"]||$request.headers["user-agent"],
+obj=JSON.parse($response.body);
 obj.Attention="Chúc mừng bạn! Vui lòng không bán hoặc chia sẻ cho người khác!";
 var {user}={{
   is_sandbox:!1,
@@ -85,31 +100,36 @@ def is_admin(user_id: int) -> bool:
         logging.error(f"is_admin failed | user_id={user_id} | {e}")
         return False
 def get_sheets():
-    try:
-        scope = [
+    creds_raw = os.getenv("GOOGLE_CREDS")
+    if not creds_raw:
+        raise RuntimeError("Missing GOOGLE_CREDS")
+
+    creds = ServiceAccountCredentials.from_json_keyfile_dict(
+        json.loads(creds_raw),
+        [
             "https://spreadsheets.google.com/feeds",
             "https://www.googleapis.com/auth/drive"
         ]
-        creds = ServiceAccountCredentials.from_json_keyfile_dict(
-            json.loads(os.getenv('GOOGLE_CREDS')),
-            scope
-        )
-        ss = gspread.authorize(creds).open_by_key(SHEET_ID)
+    )
+    ss = gspread.authorize(creds).open_by_key(SHEET_ID)
+    return ss.worksheet("modules"), ss.worksheet("users"), ss.worksheet("admin")
 
-        return (
-            ss.worksheet("modules"),
-            ss.worksheet("users"),
-            ss.worksheet("admin")
-        )
-    except Exception as e:
-        logging.error(f"Sheet Error: {e}")
-        return None, None, None
+def is_admin(user_id: int) -> bool:
+    try:
+        _, _, s_a = get_sheets()
+        return str(user_id) in s_a.col_values(1)[1:]
+    except:
+        return False
 
-def get_combined_kb(include_list=False):
+# ================= UI =================
+def get_kb(include_list=False):
     kb = []
     if include_list:
         kb.append([InlineKeyboardButton("📂 Danh sách Module", callback_data="show_list")])
-    kb.append([InlineKeyboardButton("💬 Liên hệ", url=CONTACT_URL), InlineKeyboardButton("☕ Donate", url=DONATE_URL)])
+    kb.append([
+        InlineKeyboardButton("💬 Liên hệ", url=CONTACT_URL),
+        InlineKeyboardButton("☕ Donate", url=DONATE_URL)
+    ])
     kb.append([InlineKeyboardButton("✨ Web Hướng Dẫn", url=WEB_URL)])
     return InlineKeyboardMarkup(kb)
 
