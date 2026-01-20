@@ -156,9 +156,18 @@ async def send_module_list(u: Update, c: ContextTypes.DEFAULT_TYPE):
 # --- 4. LỆNH BOT ---
 async def start(u: Update, c: ContextTypes.DEFAULT_TYPE):
     await auto_reg(u)
-    txt = f"👋 Chào <b>{u.effective_user.first_name}</b>!\n\nNhấn nút bên dưới để xem danh sách hoặc gõ /hdsd."
-    await u.message.reply_text(txt, parse_mode=ParseMode.HTML, reply_markup=get_combined_kb(include_list=True))
-
+    user_name = u.effective_user.first_name
+    txt = (
+        f"👋 Chào mừng <b>{user_name}</b> đến với Bot của NgDanhThanhTrung!\n\n"
+        f"🔹 Bot hỗ trợ lấy link Module Shadowrocket và tạo script Locket Gold riêng.\n"
+        f"🔹 Nhấn nút <b>Danh sách Module</b> bên dưới để xem các script có sẵn.\n"
+        f"🔹 Gõ /hdsd để xem cách cài đặt HTTPS Decryption."
+    )
+    await u.message.reply_text(
+        txt, 
+        parse_mode=ParseMode.HTML, 
+        reply_markup=get_kb(include_list=True) 
+    )
 async def hdsd(u: Update, c: ContextTypes.DEFAULT_TYPE):
     await auto_reg(u)
 
