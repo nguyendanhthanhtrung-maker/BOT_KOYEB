@@ -291,7 +291,7 @@ async def handle_msg(u: Update, c: ContextTypes.DEFAULT_TYPE):
 
     cmd = u.message.text.replace("/", "").lower().split('@')[0]
 
-    if cmd in ["start", "hdsd", "list", "get", "setlink", "delmodule", "broadcast", "stats", "stats"]:
+    if cmd in ["start", "hdsd", "list", "get", "setlink", "delmodule", "broadcast", "stats", "myid"]:
         return
     s_m, _, _ = get_sheets()
     db = {r['key'].lower(): r for r in s_m.get_all_records()}
@@ -329,15 +329,21 @@ async def post_init(app):
 if __name__ == "__main__":
     threading.Thread(target=lambda: server.run(host="0.0.0.0", port=PORT), daemon=True).start()
     app = ApplicationBuilder().token(TOKEN).post_init(post_init).build()
-    app.add_handler(CommandHandler("myid", myid))
+    
+    # Đưa các lệnh cụ thể lên trước
     app.add_handler(CommandHandler("start", start))
+    app.add_handler(CommandHandler("stats", stats))
+    app.add_handler(CommandHandler("myid", myid))
     app.add_handler(CommandHandler("hdsd", hdsd))
     app.add_handler(CommandHandler("list", send_module_list))
     app.add_handler(CommandHandler("get", get_bundle))
     app.add_handler(CommandHandler("setlink", set_link))
     app.add_handler(CommandHandler("delmodule", del_mod))
     app.add_handler(CommandHandler("broadcast", broadcast))
+    
     app.add_handler(CallbackQueryHandler(handle_callback))
+    
+    # MessageHandler (bộ lọc tổng quát) luôn để dưới cùng
     app.add_handler(MessageHandler(filters.COMMAND, handle_msg))
-    app.add_handler(CommandHandler("stats", stats))
+    
     app.run_polling(drop_pending_updates=True)
