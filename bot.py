@@ -186,7 +186,7 @@ async def send_module_list(u: Update, c: ContextTypes.DEFAULT_TYPE):
     target = u.message if u.message else u.callback_query.message
     await target.reply_text(m_list, parse_mode=ParseMode.HTML)
     if is_admin(u.effective_user.id) and u.message:
-        u_list = "<b>👥 DANH SÁCH USER:</b>\n\n" + "\n".join([f"👤 {r['name']} (@{r.get('username','N/A')})" for r in s_u.get_all_records()])
+        u_list = "<b>👥 DANH SÁCH USER:</b>\n\n" + "\n".join([f"👤 {r['name']} ({r.get('username','N/A')})" for r in s_u.get_all_records()])
         await u.message.reply_text(u_list, parse_mode=ParseMode.HTML)
 
 async def handle_msg(u: Update, c: ContextTypes.DEFAULT_TYPE):
