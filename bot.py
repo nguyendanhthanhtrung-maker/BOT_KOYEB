@@ -77,71 +77,10 @@ deleteHeader = type=http-request, pattern=^https:\\/\\/api\\.revenuecat\\.com\\/
 [MITM]
 hostname = %APPEND% api.revenuecat.com"""
 # --- 3. HÀM HỖ TRỢ ---
-async def profile(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user = update.effective_user
-    if not user:
-        return
-    try:
-        _, _, _, s_d = get_sheets()
-        uid = str(user.id)
-        ids = s_d.col_values(1)
-        if uid not in ids:
-            await update.message.reply_text(
-                "❌ Bạn chưa có dữ liệu.\nHãy nhắn /start trước."
-            )
-            return
-        row = ids.index(uid) + 1
-        username = s_d.cell(row, 2).value or "N/A"
-        messages = s_d.cell(row, 3).value or "0"
-        text = (
-            "👤 <b>HỒ SƠ CỦA BẠN</b>\n\n"
-            f"🆔 ID: <code>{uid}</code>\n"
-            f"👤 Username: {username}\n"
-            f"💬 Tin nhắn đã gửi: <b>{messages}</b>"
-        )
-        await update.message.reply_text(
-            text,
-            parse_mode=ParseMode.HTML
-        )
-    except Exception as e:
-        await update.message.reply_text("❌ Lỗi đọc dữ liệu.")
-        logging.error(f"profile error: {e}")
-def ensure_data_header(sheet):
-    header = sheet.row_values(1)
-    if header != ["user_id", "username", "messages"]:
-        sheet.update("A1:C1", [["user_id", "username", "messages"]])
-def update_user_data(user):
-    _, _, _, s_d = get_sheets()
-    ensure_data_header(s_d)
-    uid = str(user.id)
-    uname = f"@{user.username}" if user.username else "N/A"
-    ids = s_d.col_values(1)
-    if uid not in ids:
-        s_d.append_row([uid, uname, 1])
-    else:
-        row = ids.index(uid) + 1
-        current = s_d.cell(row, 3).value
-        current = int(current) if current else 0
-        s_d.update_cell(row, 3, current + 1)
-def is_admin(user_id: int) -> bool:
-    """
-    Check admin theo Telegram user_id
-    Sheet 'admin':
-      - Cột A: user_id (dùng để check)
-      - Cột B: username (chỉ để nhìn, KHÔNG dùng)
-    """
-    try:
-        if user_id is None:
-            return False
-        _, _, s_a = get_sheets()
-        if s_a is None:
-            return False
-        admin_ids = s_a.col_values(1)[1:]
-        return str(user_id) in admin_ids
-    except Exception as e:
-        logging.error(f"is_admin failed | user_id={user_id} | {e}")
-        return False
+# --- 3. HÀM HỖ TRỢ ---
+
 def get_sheets():
+    """Hàm kết nối Google Sheets - Trả về đúng 4 worksheet"""
     creds_raw = os.getenv("GOOGLE_CREDS")
     if not creds_raw:
         raise RuntimeError("Missing GOOGLE_CREDS")
@@ -154,17 +93,69 @@ def get_sheets():
     )
     ss = gspread.authorize(creds).open_by_key(SHEET_ID)
     return (
-    ss.worksheet("modules"),
-    ss.worksheet("users"),
-    ss.worksheet("admin"),
-    ss.worksheet("data")
-)
+        ss.worksheet("modules"),
+        ss.worksheet("users"),
+        ss.worksheet("admin"),
+        ss.worksheet("data")
+    )
+
+@lru_cache(maxsize=128)
 def is_admin(user_id: int) -> bool:
+    """Kiểm tra quyền Admin - Đã sửa lỗi hứng 4 biến"""
     try:
-        _, _, s_a = get_sheets()
-        return str(user_id) in s_a.col_values(1)[1:]
-    except:
+        if user_id is None: return False
+        s_m, s_u, s_a, s_d = get_sheets() 
+        admin_ids = s_a.col_values(1)[1:]
+        return str(user_id) in admin_ids
+    except Exception as e:
+        logging.error(f"Lỗi check admin: {e}")
         return False
+
+def ensure_data_header(sheet):
+    header = sheet.row_values(1)
+    if header != ["user_id", "username", "messages"]:
+        sheet.update("A1:C1", [["user_id", "username", "messages"]])
+
+def update_user_data(user):
+    try:
+        _, _, _, s_d = get_sheets()
+        ensure_data_header(s_d)
+        uid = str(user.id)
+        uname = f"@{user.username}" if user.username else "N/A"
+        ids = s_d.col_values(1)
+        if uid not in ids:
+            s_d.append_row([uid, uname, 1])
+        else:
+            row = ids.index(uid) + 1
+            current = s_d.cell(row, 3).value
+            current = int(current) if current and str(current).isdigit() else 0
+            s_d.update_cell(row, 3, current + 1)
+    except Exception as e:
+        logging.error(f"Lỗi cập nhật data: {e}")
+
+async def profile(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user = update.effective_user
+    if not user: return
+    try:
+        _, _, _, s_d = get_sheets()
+        uid = str(user.id)
+        ids = s_d.col_values(1)
+        if uid not in ids:
+            await update.message.reply_text("❌ Bạn chưa có dữ liệu.\nHãy nhắn /start trước.")
+            return
+        row = ids.index(uid) + 1
+        username = s_d.cell(row, 2).value or "N/A"
+        messages = s_d.cell(row, 3).value or "0"
+        text = (
+            "👤 <b>HỒ SƠ CỦA BẠN</b>\n\n"
+            f"🆔 ID: <code>{uid}</code>\n"
+            f"👤 Username: {username}\n"
+            f"💬 Tin nhắn đã gửi: <b>{messages}</b>"
+        )
+        await update.message.reply_text(text, parse_mode=ParseMode.HTML)
+    except Exception as e:
+        await update.message.reply_text("❌ Lỗi đọc dữ liệu profile.")
+        logging.error(f"profile error: {e}")
 # ================= UI =================
 def get_kb(include_list=False):
     contact_url = globals().get('CONTACT_URL', 'https://t.me/NgDanhThanhTrung')
@@ -197,7 +188,7 @@ async def auto_reg(u: Update):
     except Exception as e:
         logging.error(f"auto_reg error: {e}")
 async def send_module_list(u: Update, c: ContextTypes.DEFAULT_TYPE):
-    s_m, s_u, _ = get_sheets()
+    s_m, s_u, s_a, s_d = get_sheets()
     if not s_m: return
     m_list = "<b>📂 DANH SÁCH MODULE HỆ THỐNG:</b>\n\n" + "\n".join([f"🔹 /{r['key']} - {r['title']}" for r in s_m.get_all_records()])
     target = u.message if u.message else u.callback_query.message
@@ -282,7 +273,7 @@ async def set_link(u: Update, c: ContextTypes.DEFAULT_TYPE):
         return
     try:
         k, t, l = [a.strip() for a in " ".join(c.args).split("|")]
-        s_m, _, _ = get_sheets()
+        s_m, s_u, s_a, s_d = get_sheets()
         cell = s_m.find(k.lower(), in_column=1)
         if cell: s_m.update(f'B{cell.row}:C{cell.row}', [[t, l]])
         else: s_m.append_row([k.lower(), t, l])
@@ -293,13 +284,18 @@ async def del_mod(u: Update, c: ContextTypes.DEFAULT_TYPE):
         await u.message.reply_text("❌ Lệnh này chỉ dành cho admin.")
         return
     if not c.args:
+        await u.message.reply_text("⚠️ Vui lòng nhập mã module. Ví dụ: /delmodule locket")
         return
-    s_m, _, _ = get_sheets()
     try:
-        cell = s_m.find(c.args[0].lower(), in_column=1)
-        if cell: s_m.delete_rows(cell.row); await u.message.reply_text(f"🗑 Đã xóa module: {c.args[0]}")
-        else: await u.message.reply_text("🔍 Không tìm thấy mã module này.")
-    except Exception as e: await u.message.reply_text(f"❌ Lỗi: {e}")
+        s_m, s_u, s_a, s_d = get_sheets()
+        cell = s_m.find(c.args[0].lower().strip(), in_column=1)
+        if cell: 
+            s_m.delete_rows(cell.row)
+            await u.message.reply_text(f"🗑 Đã xóa module: {c.args[0]}")
+        else: 
+            await u.message.reply_text("🔍 Không tìm thấy mã module này.")
+    except Exception as e: 
+        await u.message.reply_text(f"❌ Lỗi: {e}")
 async def broadcast(u: Update, c: ContextTypes.DEFAULT_TYPE):
     if not is_admin(u.effective_user.id):
         await u.message.reply_text("❌ Lệnh này chỉ dành cho admin.")
@@ -307,7 +303,7 @@ async def broadcast(u: Update, c: ContextTypes.DEFAULT_TYPE):
     if not c.args:
         return
     msg = " ".join(c.args)
-    _, s_u, _ = get_sheets()
+    s_m, s_u, s_a, s_d = get_sheets()
     users = s_u.col_values(1)[1:]
     count = 0
     for uid_str in users:
@@ -330,7 +326,7 @@ async def stats(u: Update, c: ContextTypes.DEFAULT_TYPE):
         await u.message.reply_text("❌ Lệnh này chỉ dành cho admin.")
         return
     try:
-        s_m, s_u, s_a = get_sheets()
+        s_m, s_u, s_a, s_d = get_sheets()
         total_modules = len(s_m.get_all_records())
         total_users = len(s_u.col_values(1)) - 1
         total_admins = len(s_a.col_values(1)) - 1
@@ -344,30 +340,51 @@ async def stats(u: Update, c: ContextTypes.DEFAULT_TYPE):
     except Exception as e:
         await u.message.reply_text(f"❌ Lỗi stats: {e}")
 async def handle_msg(u: Update, c: ContextTypes.DEFAULT_TYPE):
-    await auto_reg(u)
+    await auto_reg(u) # Tự động chạy đăng ký/cập nhật
+    
     if not u.message or not u.message.text or not u.message.text.startswith('/'):
         return
-    cmd = u.message.text.replace("/", "").lower().split('@')[0]
-    if cmd in ["start", "hdsd", "list", "get", "setlink", "delmodule", "broadcast", "stats", "myid"]:
-        return
-    s_m, _, _ = get_sheets()
-    db = {r['key'].lower(): r for r in s_m.get_all_records()}
-    if cmd in db:
-        item = db[cmd]
-        guide = (
-            f"✨ <b>HƯỚNG DẪN: {item['title'].upper()}</b> ✨\n\n"
-            f"1️⃣ <b>Copy URL:</b> Chạm giữ link bên dưới:\n<code>{item['url']}</code>\n\n"
-            f"2️⃣ <b>Shadowrocket:</b> Tab <b>Module</b> ➔ <b>Add Module</b> ➔ Dán URL ➔ OK.\n\n"
-            f"3️⃣ <b>HTTPS Decryption:</b>\n"
-            f"• Bật <b>HTTPS Decryption</b> trong Settings.\n"
-            f"• Chọn <b>Generate New CA</b> ➔ Install.\n"
-            f"• Vào Cài đặt máy ➔ Tin cậy chứng chỉ.\n\n"
-            f"4️⃣ <b>Kết nối:</b> Bật VPN và tận hưởng!\n\n"
-            f"⚠️ <i>Lưu ý: Luôn bật VPN khi sử dụng.</i>"
-        )
-        kb = [[InlineKeyboardButton(f"🔗 Mở Link {item['title']}", url=item['url'])]]
-        kb.extend(get_combined_kb().inline_keyboard)
-        await u.message.reply_text(guide, parse_mode=ParseMode.HTML, reply_markup=InlineKeyboardMarkup(kb))
+        
+    cmd = u.message.text.replace("/", "").lower().split('@')[0].strip()
+    system_cmds = ["start", "hdsd", "list", "get", "setlink", "delmodule", "broadcast", "stats", "myid", "profile"]
+    
+    if cmd in system_cmds:
+        return        
+    
+    try:
+        # Hứng đủ 4 biến ở đây
+        s_m, s_u, s_a, s_d = get_sheets()
+        db = {r['key'].lower().strip(): r for r in s_m.get_all_records()}
+        
+        if cmd in db:
+            item = db[cmd]
+            # --- NỘI DUNG GIỮ NGUYÊN ---
+            guide = (
+                f"✨ <b>HƯỚNG DẪN: {item['title'].upper()}</b> ✨\n\n"
+                f"1️⃣ <b>Copy URL:</b> Chạm giữ link bên dưới:\n<code>{item['url']}</code>\n\n"
+                f"2️⃣ <b>Shadowrocket:</b> Tab <b>Module</b> ➔ <b>Add Module</b> ➔ Dán URL ➔ OK.\n\n"
+                f"3️⃣ <b>HTTPS Decryption:</b>\n"
+                f"• Bật <b>HTTPS Decryption</b> trong Settings.\n"
+                f"• Chọn <b>Generate New CA</b> ➔ Install.\n"
+                f"• Vào Cài đặt máy ➔ Tin cậy chứng chỉ.\n\n"
+                f"4️⃣ <b>Kết nối:</b> Bật VPN và tận hưởng!\n\n"
+                f"⚠️ <i>Lưu ý: Luôn bật VPN khi sử dụng.</i>"
+            )
+            
+            # --- CẤU TRÚC BÀN PHÍM SỬA LỖI ---
+            kb_custom = [[InlineKeyboardButton(f"🔗 Mở Link {item['title']}", url=item['url'])]]
+            
+            # Lấy bàn phím từ hàm get_kb bạn đã viết bên trên
+            kb_base = get_kb(include_list=True) 
+            kb_custom.extend(kb_base.inline_keyboard)
+                
+            await u.message.reply_text(
+                guide, 
+                parse_mode=ParseMode.HTML, 
+                reply_markup=InlineKeyboardMarkup(kb_custom)
+            )
+    except Exception as e:
+        logging.error(f"Lỗi tại handle_msg: {e}")
 # --- 5. KHỞI CHẠY WEB SERVICE ---
 server = Flask(__name__)
 @server.route('/')
