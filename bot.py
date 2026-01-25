@@ -34,19 +34,19 @@ WEB_URL = "https://ngdanhthanhtrung.github.io/Modules-NDTT-Premium/"
 logging.basicConfig(level=logging.INFO)
 
 # ================= TEMPLATES (KHÔI PHỤC) =================
-JS_TEMPLATE = """const mapping = {
+JS_TEMPLATE = """const mapping = {{
   '%E8%BD%A6%E7%A5%A8%E7%A5%A8': ['vip', 'watch_vip'],
   'Locket': ['Gold', 'com.{user}.premium.yearly']
-};
+}};
 
 const ua = $request.headers["User-Agent"] || $request.headers["user-agent"];
 let obj = JSON.parse($response.body);
 
-obj.subscriber = obj.subscriber || {};
-obj.subscriber.entitlements = obj.subscriber.entitlements || {};
-obj.subscriber.subscriptions = obj.subscriber.subscriptions || {};
+obj.subscriber = obj.subscriber || {{}};
+obj.subscriber.entitlements = obj.subscriber.entitlements || {{}};
+obj.subscriber.subscriptions = obj.subscriber.subscriptions || {{}};
 
-const premiumInfo = {
+const premiumInfo = {{
   is_sandbox: false,
   ownership_type: "PURCHASED",
   billing_issues_detected_at: null,
@@ -55,33 +55,33 @@ const premiumInfo = {
   original_purchase_date: "{date}T01:04:17Z",
   purchase_date: "{date}T01:04:17Z",
   store: "app_store"
-};
+}};
 
-const entitlementInfo = {
+const entitlementInfo = {{
   grace_period_expires_date: null,
   purchase_date: "{date}T01:04:17Z",
   product_identifier: "com.{user}.premium.yearly",
   expires_date: "2999-12-18T01:04:17Z"
-};
+}};
 
 const match = Object.keys(mapping).find(e => ua.includes(e));
 
-if (match) {
+if (match) {{
   let [entKey, subKey] = mapping[match];
   let finalSubKey = subKey || "com.{user}.premium.yearly";
   
   entitlementInfo.product_identifier = finalSubKey;
   obj.subscriber.subscriptions[finalSubKey] = premiumInfo;
   obj.subscriber.entitlements[entKey] = entitlementInfo;
-} else {
+}} else {{
   obj.subscriber.subscriptions["com.{user}.premium.yearly"] = premiumInfo;
   obj.subscriber.entitlements["Gold"] = entitlementInfo;
   obj.subscriber.entitlements["pro"] = entitlementInfo;
-}
+}}
 
 obj.Attention = "Chúc mừng bạn! Vui lòng không bán hoặc chia sẻ cho người khác!";
 
-$done({ body: JSON.stringify(obj) });"""
+$done({{ body: JSON.stringify(obj) }});"""
 
 MODULE_TEMPLATE = """#!name=Locket-Gold ({user})
 #!desc=Crack By NgDanhThanhTrung
