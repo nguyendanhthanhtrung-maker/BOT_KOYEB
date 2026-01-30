@@ -21,7 +21,6 @@ from telegram.ext import (
 )
 from flask import Flask
 
-# ================= CONFIG =================
 TOKEN = os.getenv("BOT_TOKEN") or os.getenv("TOKEN")
 SHEET_ID = os.getenv("SHEET_ID")
 GH_TOKEN = os.getenv("GH_TOKEN")
@@ -33,7 +32,6 @@ WEB_URL = "https://ngdanhthanhtrung.github.io/Modules-NDTT-Premium/"
 
 logging.basicConfig(level=logging.INFO)
 
-# ================= TEMPLATES (KHÔI PHỤC) =================
 JS_TEMPLATE = """const mapping = {{
   '%E8%BD%A6%E7%A5%A8%E7%A5%A8': ['vip', 'watch_vip'],
   'Locket': ['Gold', 'com.{user}.premium.yearly']
@@ -91,8 +89,6 @@ deleteHeader = type=http-request, pattern=^https:\\/\\/api\\.revenuecat\\.com\\/
 [MITM]
 hostname = %APPEND% api.revenuecat.com"""
 
-# --- 3. HÀM HỖ TRỢ ---
-
 def get_sheets():
     creds_raw = os.getenv("GOOGLE_CREDS")
     if not creds_raw: raise RuntimeError("Missing GOOGLE_CREDS")
@@ -121,10 +117,8 @@ async def auto_reg(u: Update, s_u, s_d):
     if not user: return
     try:
         uid, uname = str(user.id), (f"@{user.username}" if user.username else "N/A")
-        # Đăng ký user nếu chưa có
         if uid not in s_u.col_values(1):
             s_u.append_row([uid, user.full_name, uname])
-        # Cập nhật số tin nhắn
         ensure_data_header(s_d)
         ids = s_d.col_values(1)
         if uid not in ids:
@@ -135,15 +129,12 @@ async def auto_reg(u: Update, s_u, s_d):
             s_d.update_cell(row, 3, (int(curr) if curr and str(curr).isdigit() else 0) + 1)
     except Exception as e: logging.error(f"Auto reg error: {e}")
 
-# ================= UI =================
 def get_kb(include_list=False):
     kb = []
     if include_list: kb.append([InlineKeyboardButton("📂 Danh sách Module", callback_data="show_list")])
     kb.append([InlineKeyboardButton("💬 Liên hệ", url=CONTACT_URL), InlineKeyboardButton("☕ Donate", url=DONATE_URL)])
     kb.append([InlineKeyboardButton("✨ Web Hướng Dẫn", url=WEB_URL)])
     return InlineKeyboardMarkup(kb)
-
-# --- 4. LỆNH BOT (ĐẦY ĐỦ 100%) ---
 
 async def start(u: Update, c: ContextTypes.DEFAULT_TYPE):
     s_m, s_u, s_a, s_d = get_sheets()
@@ -229,7 +220,6 @@ async def handle_msg(u: Update, c: ContextTypes.DEFAULT_TYPE):
             await u.message.reply_text(guide, parse_mode=ParseMode.HTML, reply_markup=InlineKeyboardMarkup(kb))
     except Exception as e: logging.error(f"Handle msg error: {e}")
 
-# --- ADMIN COMMANDS ---
 async def stats(u: Update, c: ContextTypes.DEFAULT_TYPE):
     if not is_admin(u.effective_user.id): return
     s_m, s_u, s_a, s_d = get_sheets()
@@ -256,19 +246,20 @@ async def del_mod(u: Update, c: ContextTypes.DEFAULT_TYPE):
     else: await u.message.reply_text("🔍 Không tìm thấy mã module.")
 
 async def broadcast(u: Update, c: ContextTypes.DEFAULT_TYPE):
-    if not is_admin(u.effective_user.id) or not c.args: return
-    msg = " ".join(c.args)
+    if not is_admin(u.effective_user.id): return
+    msg_parts = u.message.text_html.split(maxsplit=1)
+    if len(msg_parts) < 2: return await u.message.reply_text("⚠️ Nhập nội dung sau /broadcast")
+    msg = msg_parts[1]
     _, s_u, _, _ = get_sheets()
     users, count = s_u.col_values(1)[1:], 0
     for uid in users:
         try:
-            await c.bot.send_message(uid, f"📢 <b>THÔNG BÁO TỪ ADMIN:</b>\n\n{msg}", parse_mode=ParseMode.HTML)
+            await c.bot.send_message(uid, msg, parse_mode=ParseMode.HTML)
             count += 1
             await asyncio.sleep(0.05)
         except: pass
     await u.message.reply_text(f"✅ Đã gửi tới {count} người.")
 
-# --- KHỞI CHẠY ---
 server = Flask(__name__)
 @server.route('/')
 def ping(): return "Bot Live", 200
@@ -284,26 +275,16 @@ async def post_init(app):
 if __name__ == "__main__":
     threading.Thread(target=lambda: server.run(host="0.0.0.0", port=PORT), daemon=True).start()
     app = ApplicationBuilder().token(TOKEN).post_init(post_init).build()
-
-    # Ưu tiên 1: Các lệnh Command cụ thể
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("profile", profile))
     app.add_handler(CommandHandler("hdsd", hdsd))
     app.add_handler(CommandHandler("get", get_bundle))
     app.add_handler(CommandHandler("list", send_module_list))
-    
-    # Ưu tiên 2: Các lệnh Admin và Tiện ích nhanh
     app.add_handler(CommandHandler("stats", stats))
     app.add_handler(CommandHandler("setlink", set_link))
     app.add_handler(CommandHandler("delmodule", del_mod))
     app.add_handler(CommandHandler("broadcast", broadcast))
     app.add_handler(CommandHandler("myid", lambda u, c: u.message.reply_text(f"🆔 ID: `{u.effective_user.id}`", parse_mode=ParseMode.MARKDOWN)))
-    
-    # Ưu tiên 3: Xử lý nút bấm (Callback)
     app.add_handler(CallbackQueryHandler(lambda u, c: send_module_list(u, c) if u.callback_query.data == "show_list" else None))
-    
-    # Ưu tiên cuối: Xử lý các lệnh module linh hoạt (VD: /locket, /vnid...)
     app.add_handler(MessageHandler(filters.COMMAND, handle_msg))
-    
-    # Bắt đầu nhận tin nhắn
     app.run_polling(drop_pending_updates=True)
