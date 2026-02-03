@@ -9,8 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --gold-primary: #fbbf24;
-            --gold-dark: #d97706;
+            --gold: #fbbf24;
             --bg-dark: #020617;
         }
 
@@ -38,11 +37,6 @@
 
         @keyframes shine { to { background-position: 200% center; } }
 
-        .step-number {
-            background: linear-gradient(135deg, #fbbf24, #d97706);
-            box-shadow: 0 4px 15px rgba(217, 119, 6, 0.4);
-        }
-
         .hover-lift { transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
         .hover-lift:hover { transform: translateY(-8px); }
 
@@ -52,55 +46,59 @@
         }
         .btn-primary:hover {
             transform: scale(1.02);
-            box-shadow: 0 0 20px rgba(251, 191, 36, 0.4);
+            box-shadow: 0 0 25px rgba(251, 191, 36, 0.4);
         }
         .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
     </style>
 </head>
-<body class="py-12 px-4">
+<body class="py-12 px-4 md:px-8">
 
-    <div class="max-w-4xl mx-auto">
-        <header class="text-center mb-12">
-            <div class="inline-flex items-center gap-2 px-4 py-2 mb-6 glass rounded-full text-[10px] font-bold uppercase text-yellow-500 border border-yellow-500/30">
-                <span class="flex h-2 w-2 relative">
-                    <span class="animate-ping absolute h-full w-full rounded-full bg-yellow-400 opacity-75"></span>
-                    <span class="relative inline-flex rounded-full h-2 w-2 bg-yellow-500"></span>
-                </span>
-                Online Service • Personal Module
-            </div>
-            <h1 class="text-5xl md:text-7xl font-black mb-6 gold-text tracking-tight">Locket NDTT</h1>
-            <p class="text-gray-400 max-w-xl mx-auto">Tạo Module cá nhân hóa cho <span class="text-yellow-500 font-bold text-glow text-lg">Locket Gold</span></p>
+    <div class="max-w-5xl mx-auto">
+        <header class="text-center mb-16 relative">
+            <div class="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-64 bg-yellow-500/10 blur-[120px] rounded-full -z-10"></div>
+            <h1 class="text-6xl md:text-8xl font-black mb-6 gold-text tracking-tight">Locket NDTT</h1>
+            <p class="text-gray-400 max-w-2xl mx-auto text-lg leading-relaxed">
+                Hệ thống tạo Module Shadowrocket mở khóa <span class="text-yellow-500 font-semibold">Locket Gold</span> vĩnh viễn.
+            </p>
         </header>
 
-        <div class="glass p-8 rounded-[2.5rem] mb-12 relative overflow-hidden">
-            <div class="absolute -top-24 -right-24 w-64 h-64 bg-yellow-500/5 blur-[80px] rounded-full"></div>
-            
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                <div>
-                    <label class="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-3 ml-1">Tên Người Dùng</label>
-                    <input type="text" id="user" placeholder="Ví dụ: ndtt" class="w-full bg-slate-900/50 border border-white/10 p-4 rounded-2xl outline-none focus:border-yellow-500/50 transition-all">
+        <div class="glass rounded-[3rem] p-8 md:p-12 mb-16 relative overflow-hidden">
+            <div class="max-w-3xl mx-auto">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                    <div class="space-y-3">
+                        <label class="text-xs font-bold uppercase text-gray-500 ml-2 tracking-widest">Tên Module (Thay thế {user})</label>
+                        <input type="text" id="user" placeholder="Ví dụ: trungnd" 
+                               class="w-full bg-slate-900/50 border border-white/10 p-5 rounded-2xl outline-none focus:border-yellow-500/50 transition-all text-white">
+                    </div>
+                    <div class="space-y-3">
+                        <label class="text-xs font-bold uppercase text-gray-500 ml-2 tracking-widest">Ngày Tham Gia (Thay thế {date})</label>
+                        <input type="date" id="join_date" value="2024-01-01" 
+                               class="w-full bg-slate-900/50 border border-white/10 p-5 rounded-2xl outline-none focus:border-yellow-500/50 transition-all text-gray-300">
+                    </div>
                 </div>
-                <div>
-                    <label class="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-3 ml-1">Ngày Hết Hạn</label>
-                    <input type="date" id="date" value="2999-12-31" class="w-full bg-slate-900/50 border border-white/10 p-4 rounded-2xl outline-none focus:border-yellow-500/50 transition-all text-gray-400">
+
+                <div class="mb-8 p-5 bg-yellow-500/5 border border-yellow-500/20 rounded-2xl flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <i class="fas fa-calendar-check text-yellow-500"></i>
+                        <span class="text-sm font-medium text-gray-400">Hạn sử dụng Module:</span>
+                    </div>
+                    <span class="text-sm font-black text-yellow-500">31/12/2999 (VĨNH VIỄN)</span>
                 </div>
-            </div>
 
-            <button onclick="generateModule()" id="genBtn" class="btn-primary w-full py-5 rounded-2xl text-black font-black text-lg shadow-lg flex items-center justify-center gap-3">
-                <i class="fas fa-magic"></i> TẠO LINK MODULE NGAY
-            </button>
+                <button onclick="generate()" id="btnGen" class="btn-primary w-full py-6 rounded-2xl text-black font-black text-xl shadow-xl flex items-center justify-center gap-3">
+                    <i class="fas fa-wand-magic-sparkles text-2xl"></i> TẠO MODULE CỦA TÔI
+                </button>
 
-            <div id="resultArea" class="mt-8 hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <div class="p-6 bg-black/40 border border-yellow-500/20 rounded-2xl">
-                    <p class="text-xs font-bold text-yellow-500 mb-3 uppercase">Link Module của bạn:</p>
-                    <div class="flex flex-col gap-4">
-                        <code id="resUrl" class="text-xs break-all bg-black/60 p-4 rounded-xl text-gray-300 border border-white/5"></code>
-                        <div class="flex flex-wrap gap-3">
-                            <button onclick="copyToClipboard()" class="flex-1 bg-white/10 hover:bg-white/20 py-3 rounded-xl text-sm font-bold transition">
-                                <i class="fas fa-copy mr-2"></i> Sao Chép
+                <div id="resultArea" class="mt-10 hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
+                    <div class="p-8 bg-black/40 border border-yellow-500/20 rounded-[2.5rem] space-y-5 text-center">
+                        <p class="text-xs font-bold text-yellow-500 uppercase tracking-[0.3em]">Cấu hình đã sẵn sàng</p>
+                        <code id="resUrl" class="block p-5 bg-black/60 rounded-xl text-[10px] md:text-xs break-all text-blue-400 border border-white/5 font-mono"></code>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <button onclick="copyLink()" class="bg-white/5 hover:bg-white/10 py-4 rounded-xl font-bold transition flex items-center justify-center gap-2 border border-white/5">
+                                <i class="fas fa-copy"></i> SAO CHÉP LINK
                             </button>
-                            <a id="quickBtn" href="#" class="flex-1 bg-yellow-500 hover:bg-yellow-400 py-3 rounded-xl text-sm font-bold text-black text-center transition">
-                                <i class="fas fa-bolt mr-2"></i> Cài Nhanh
+                            <a id="quickInstall" href="#" class="bg-yellow-500 hover:bg-yellow-400 text-black py-4 rounded-xl font-bold transition flex items-center justify-center gap-2">
+                                <i class="fas fa-bolt"></i> CÀI NHANH
                             </a>
                         </div>
                     </div>
@@ -108,14 +106,115 @@
             </div>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-16">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-20">
             <a href="https://t.me/NgDanhThanhTrung" target="_blank" class="glass p-6 rounded-3xl flex items-center gap-4 hover-lift group">
-                <div class="w-12 h-12 bg-sky-500/10 rounded-2xl flex items-center justify-center text-sky-400 group-hover:bg-sky-500 group-hover:text-white transition-all">
+                <div class="w-12 h-12 bg-sky-500/10 rounded-2xl flex items-center justify-center text-sky-400 group-hover:bg-sky-500 group-hover:text-white transition-all shadow-lg shadow-sky-500/10">
                     <i class="fab fa-telegram-plane text-xl"></i>
                 </div>
                 <div>
-                    <p class="text-[10px] font-bold text-gray-500 uppercase">Hỗ trợ qua</p>
-                    <p class="font-bold">Telegram</p>
+                    <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Hỗ trợ</p>
+                    <p class="font-bold text-white group-hover:text-sky-400 transition-colors text-sm">Telegram</p>
                 </div>
             </a>
-            <a href="
+
+            <a href="https://ngdanhthanhtrung.github.io/Bank/" target="_blank" class="glass p-6 rounded-3xl flex items-center gap-4 hover-lift group">
+                <div class="w-12 h-12 bg-rose-500/10 rounded-2xl flex items-center justify-center text-rose-500 group-hover:bg-rose-500 group-hover:text-white transition-all shadow-lg shadow-rose-500/10">
+                    <i class="fas fa-heart text-xl"></i>
+                </div>
+                <div>
+                    <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Duy trì</p>
+                    <p class="font-bold text-white group-hover:text-rose-400 transition-colors text-sm">Donate</p>
+                </div>
+            </a>
+
+            <a href="https://www.facebook.com/ThanhTrung53" target="_blank" class="glass p-6 rounded-3xl flex items-center gap-4 hover-lift group">
+                <div class="w-12 h-12 bg-blue-600/10 rounded-2xl flex items-center justify-center text-blue-500 group-hover:bg-blue-600 group-hover:text-white transition-all shadow-lg shadow-blue-600/10">
+                    <i class="fab fa-facebook-f text-xl"></i>
+                </div>
+                <div>
+                    <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Cá nhân</p>
+                    <p class="font-bold text-white group-hover:text-blue-400 transition-colors text-sm">Facebook</p>
+                </div>
+            </a>
+
+            <div class="glass p-6 rounded-3xl flex items-center gap-4">
+                <div class="w-12 h-12 bg-emerald-500/10 rounded-2xl flex items-center justify-center text-emerald-500">
+                    <span class="relative flex h-3 w-3">
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                    </span>
+                </div>
+                <div>
+                    <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Hệ thống</p>
+                    <p class="font-bold text-emerald-400 text-sm">Online 24/7</p>
+                </div>
+            </div>
+        </div>
+
+        <footer class="text-center pb-12 opacity-40 text-[10px] font-bold tracking-[0.3em] uppercase">
+            © 2026 Developed by NgDanhThanhTrung
+        </footer>
+    </div>
+
+    <div id="toast" class="fixed bottom-10 left-1/2 -translate-x-1/2 glass px-8 py-4 rounded-full text-white border border-yellow-500/30 opacity-0 translate-y-10 transition-all duration-500 pointer-events-none z-50 text-sm font-bold">
+        <i class="fas fa-check-circle text-yellow-500 mr-2"></i> ĐÃ SAO CHÉP LIÊN KẾT!
+    </div>
+
+    <script>
+        async function generate() {
+            const user = document.getElementById('user').value.trim();
+            const join_date = document.getElementById('join_date').value; // Định dạng YYYY-MM-DD
+            const btn = document.getElementById('btnGen');
+            
+            if(!user || !join_date) {
+                alert("Vui lòng nhập tên người dùng và chọn ngày tham gia!");
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner animate-spin text-2xl"></i> ĐANG KHỞI TẠO...';
+
+            try {
+                const response = await fetch('/api/generate', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ 
+                        user: user, 
+                        join_date: join_date // Gửi join_date để backend gán vào biến {date}
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if(data.success) {
+                    document.getElementById('resultArea').classList.remove('hidden');
+                    document.getElementById('resUrl').innerText = data.url;
+                    document.getElementById('quickInstall').href = `shadowrocket://config/add/${data.url}`;
+                    btn.innerHTML = '<i class="fas fa-check"></i> TẠO THÀNH CÔNG!';
+                } else {
+                    alert("Lỗi: " + data.error);
+                    btn.disabled = false;
+                    btn.innerHTML = 'TẠO MODULE CỦA TÔI';
+                }
+            } catch (err) {
+                alert("Không thể kết nối với Server!");
+                btn.disabled = false;
+                btn.innerHTML = 'TẠO MODULE CỦA TÔI';
+            }
+        }
+
+        function copyLink() {
+            const text = document.getElementById('resUrl').innerText;
+            navigator.clipboard.writeText(text).then(() => {
+                const toast = document.getElementById('toast');
+                toast.classList.remove('opacity-0', 'translate-y-10');
+                toast.classList.add('opacity-100', 'translate-y-0');
+                setTimeout(() => {
+                    toast.classList.add('opacity-0', 'translate-y-10');
+                    toast.classList.remove('opacity-100', 'translate-y-0');
+                }, 3000);
+            });
+        }
+    </script>
+</body>
+</html>
