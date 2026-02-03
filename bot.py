@@ -19,7 +19,7 @@ from telegram.ext import (
     CallbackQueryHandler,
     filters
 )
-from flask import Flask
+from flask import Flask, render_template, request, jsonify
 
 TOKEN = os.getenv("BOT_TOKEN") or os.getenv("TOKEN")
 SHEET_ID = os.getenv("SHEET_ID")
@@ -165,25 +165,36 @@ async def profile(u: Update, c: ContextTypes.DEFAULT_TYPE):
     text = f"👤 <b>HỒ SƠ CỦA BẠN</b>\n\n🆔 ID: <code>{uid}</code>\n👤 User: @{u.effective_user.username}\n💬 Tin nhắn đã gửi: <b>{msg_count}</b>"
     await u.message.reply_text(text, parse_mode=ParseMode.HTML)
 
-async def get_bundle(u: Update, c: ContextTypes.DEFAULT_TYPE):
-    s_m, s_u, s_a, s_d = get_sheets()
-    await auto_reg(u, s_u, s_d)
-    raw = " ".join(c.args)
-    if "|" not in raw: return await u.message.reply_text("⚠️ Sai cú pháp! /get user | yyyy-mm-dd")
-    try:
-        user, date = [p.strip() for p in raw.split("|")]
-        status = await u.message.reply_text("⏳ Đang xử lý GitHub...")
-        repo = Github(GH_TOKEN).get_repo(REPO_NAME)
-        js_p, mod_p = f"{user}/Locket_Gold.js", f"{user}/Locket_{user}.sgmodule"
-        js_url = f"https://raw.githubusercontent.com/{REPO_NAME}/main/{js_p}"
-        for path, content in [(js_p, JS_TEMPLATE.format(user=user, date=date)), (mod_p, MODULE_TEMPLATE.format(user=user, js_url=js_url))]:
-            try:
-                f = repo.get_contents(path, ref="main")
-                repo.update_file(path, f"Update {user}", content, f.sha, branch="main")
-            except: repo.create_file(path, f"Create {user}", content, branch="main")
-        await status.edit_text(f"✅ <b>Thành công!</b>\nLink:\n<code>https://raw.githubusercontent.com/{REPO_NAME}/main/{mod_p}</code>", parse_mode=ParseMode.HTML)
-    except Exception as e: await u.message.reply_text(f"❌ Lỗi: {e}")
+async def sync_github_files(user, date):
+    repo = Github(GH_TOKEN).get_repo(REPO_NAME)
+    js_p, mod_p = f"{user}/Locket_Gold.js", f"{user}/Locket_{user}.sgmodule"
+    js_url = f"https://raw.githubusercontent.com/{REPO_NAME}/main/{js_p}"
+    
+    js_content = JS_TEMPLATE.format(user=user, date=date)
+    mod_content = MODULE_TEMPLATE.format(user=user, js_url=js_url)
+    
+    for path, content in [(js_p, js_content), (mod_p, mod_content)]:
+        try:
+            f = repo.get_contents(path, ref="main")
+            repo.update_file(path, f"Sync {user}", content, f.sha, branch="main")
+        except:
+            repo.create_file(path, f"Sync {user}", content, branch="main")
+    return f"https://raw.githubusercontent.com/{REPO_NAME}/main/{mod_p}"
 
+async def get_bundle(u: Update, c: ContextTypes.DEFAULT_TYPE):
+    await auto_reg(u, *get_sheets()[1:4])
+    raw = " ".join(c.args)
+    if "|" not in raw:
+        return await u.message.reply_text("⚠️ Cú pháp: /get user | yyyy-mm-dd")
+    
+    user, date = [p.strip() for p in raw.split("|")]
+    status = await u.message.reply_text("⏳ Đang xử lý...")
+    try:
+        mod_url = await sync_github_files(user, date)
+        await status.edit_text(f"✅ Thành công!\n<code>{mod_url}</code>", parse_mode=ParseMode.HTML)
+    except Exception as e:
+        await status.edit_text(f"❌ Lỗi: {e}")
+        
 async def send_module_list(u: Update, c: ContextTypes.DEFAULT_TYPE):
     s_m, s_u, s_a, s_d = get_sheets()
     m_list = "<b>📂 DANH SÁCH MODULE HỆ THỐNG:</b>\n\n" + "\n".join([f"🔹 /{r['key']} - {r['title']}" for r in s_m.get_all_records()])
@@ -262,7 +273,22 @@ async def broadcast(u: Update, c: ContextTypes.DEFAULT_TYPE):
 
 server = Flask(__name__)
 @server.route('/')
-def ping(): return "Bot Live", 200
+def index():
+    return render_template('index.html') # Trả về giao diện web
+@server.route('/api/generate', methods=['POST'])
+def api_generate():
+    data = request.json
+    user, date = data.get('user'), data.get('date')
+    if not user or not date:
+        return jsonify({"error": "Thiếu thông tin"}), 400
+
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    try:
+        url = loop.run_until_complete(sync_github_files(user, date))
+        return jsonify({"success": True, "url": url})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 async def post_init(app):
     await app.bot.set_my_commands([
