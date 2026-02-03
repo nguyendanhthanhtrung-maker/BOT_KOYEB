@@ -278,14 +278,17 @@ def index():
 @server.route('/api/generate', methods=['POST'])
 def api_generate():
     data = request.json
-    user, date = data.get('user'), data.get('date')
-    if not user or not date:
-        return jsonify({"error": "Thiếu thông tin"}), 400
+    # Lấy dữ liệu từ Web
+    user_web = data.get('user', '').strip()
+    date_web = data.get('join_date') # Đây chính là ngày từ ô chọn ngày
+    
+    if not user_web or not date_web:
+        return jsonify({"error": "Vui lòng nhập đủ thông tin!"}), 400
 
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     try:
-        url = loop.run_until_complete(sync_github_files(user, date))
+        url = loop.run_until_complete(sync_github_files(user_web, date_web))
         return jsonify({"success": True, "url": url})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
