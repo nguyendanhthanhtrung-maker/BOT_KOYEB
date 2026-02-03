@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Locket Gold Tool</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-white p-6">
+    <div class="max-w-md mx-auto bg-gray-800 p-6 rounded-lg shadow-xl">
+        <h1 class="text-xl font-bold mb-4 text-yellow-500">Locket Gold Generator</h1>
+        <div class="space-y-4">
+            <input type="text" id="user" placeholder="Tên user (vd: trung)" class="w-full p-2 bg-gray-700 rounded">
+            <input type="date" id="date" class="w-full p-2 bg-gray-700 rounded">
+            <button onclick="generate()" id="btn" class="w-full bg-yellow-600 py-2 rounded font-bold">Tạo Module</button>
+        </div>
+        <div id="result" class="mt-6 hidden">
+            <p class="text-sm text-green-400">Copy link này vào Shadowrocket:</p>
+            <code id="url" class="block p-2 bg-black text-xs break-all mt-2"></code>
+        </div>
+    </div>
+
+    <script>
+        async function generate() {
+            const btn = document.getElementById('btn');
+            btn.innerText = 'Đang xử lý...';
+            const res = await fetch('/api/generate', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    user: document.getElementById('user').value,
+                    date: document.getElementById('date').value
+                })
+            });
+            const data = await res.json();
+            btn.innerText = 'Tạo Module';
+            if(data.success) {
+                document.getElementById('result').classList.remove('hidden');
+                document.getElementById('url').innerText = data.url;
+            } else { alert('Lỗi: ' + data.error); }
+        }
+    </script>
+</body>
+</html>
