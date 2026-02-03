@@ -3,217 +3,390 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Locket NDTT Premium - Generator</title>
+    <title>Locket NDTT | Tool Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
-            --gold: #fbbf24;
+            --brand-gold: #fbbf24;
+            --brand-red: #ef4444;
             --bg-dark: #020617;
         }
 
-        body { 
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            background-color: var(--bg-dark);
             background: radial-gradient(circle at top right, #1e1b4b, #0f172a, #020617);
-            color: #e2e8f0; 
-            font-family: 'Plus Jakarta Sans', sans-serif; 
+            color: #f1f5f9;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            overflow-x: hidden;
             min-height: 100vh;
         }
 
-        .glass { 
-            background: rgba(30, 41, 59, 0.4); 
-            backdrop-filter: blur(16px); 
-            border: 1px solid rgba(255, 255, 255, 0.08); 
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        /* Glass Cards */
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.4);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 24px;
         }
 
-        .gold-text {
+        /* Gold Text Animation */
+        .gold-text-animated {
             background: linear-gradient(to right, #fbbf24, #fef3c7, #f59e0b, #fbbf24);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-size: 200% auto;
             animation: shine 4s linear infinite;
         }
-
         @keyframes shine { to { background-position: 200% center; } }
 
-        .hover-lift { transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
-        .hover-lift:hover { transform: translateY(-8px); }
+        /* Inputs & Buttons */
+        .input-dark {
+            background: rgba(2, 6, 23, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            transition: all 0.3s;
+        }
+        .input-dark:focus {
+            border-color: var(--brand-gold);
+            box-shadow: 0 0 0 4px rgba(251, 191, 36, 0.1);
+            outline: none;
+        }
 
-        .btn-primary {
-            background: linear-gradient(135deg, #fbbf24, #d97706);
-            transition: all 0.3s ease;
+        .btn-gold {
+            background: linear-gradient(135deg, #fbbf24 0%, #d97706 100%);
+            color: #000;
+            font-weight: 800;
+            border-radius: 18px;
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
-        .btn-primary:hover {
-            transform: scale(1.02);
-            box-shadow: 0 0 25px rgba(251, 191, 36, 0.4);
+        .btn-gold:hover:not(:disabled) {
+            transform: scale(1.02) translateY(-2px);
+            box-shadow: 0 10px 25px rgba(251, 191, 36, 0.4);
         }
-        .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-gold:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .step-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            padding: 24px;
+            position: relative;
+            transition: all 0.3s;
+        }
+        .step-card:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(251, 191, 36, 0.2);
+        }
+
+        .step-number {
+            position: absolute;
+            top: -12px;
+            left: 20px;
+            background: var(--brand-gold);
+            color: black;
+            width: 28px;
+            height: 28px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 900;
+            font-size: 14px;
+            box-shadow: 0 4px 12px rgba(251, 191, 36, 0.3);
+        }
+
+        /* Fixed QR Container */
+        .qr-wrapper {
+            width: 140px;
+            height: 140px;
+            background: white;
+            padding: 10px;
+            border-radius: 1.5rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .qr-wrapper img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
     </style>
 </head>
-<body class="py-12 px-4 md:px-8">
-
-    <div class="max-w-5xl mx-auto">
-        <header class="text-center mb-16 relative">
-            <div class="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-64 bg-yellow-500/10 blur-[120px] rounded-full -z-10"></div>
-            <h1 class="text-6xl md:text-8xl font-black mb-6 gold-text tracking-tight">Locket NDTT</h1>
-            <p class="text-gray-400 max-w-2xl mx-auto text-lg leading-relaxed">
-                Hệ thống tạo Module Shadowrocket mở khóa <span class="text-yellow-500 font-semibold">Locket Gold</span> vĩnh viễn.
+<body class="py-12 px-4">
+    <div class="max-w-5xl mx-auto space-y-16">
+        
+        <!-- HEADER -->
+        <header class="text-center mb-16">
+            <div class="inline-block px-4 py-1 mb-6 bg-yellow-500/10 text-yellow-500 rounded-full text-[10px] font-black uppercase tracking-[0.2em] border border-yellow-500/20">
+                Nền tảng khởi tạo Module hàng đầu cho Shadowrocket
+            </div>
+            <h1 class="text-5xl md:text-8xl font-black gold-text-animated tracking-tighter mb-4 uppercase">Locket Gold</h1>
+            <p class="text-slate-400 max-w-2xl mx-auto text-sm md:text-base leading-relaxed font-medium">
+                Kích hoạt Locket Gold vĩnh viễn với đặc quyền không giới hạn. <br class="hidden md:block">
+                Hỗ trợ mở khóa toàn bộ tính năng cao cấp thông qua hệ thống Scripting.
             </p>
         </header>
 
-        <div class="glass rounded-[3rem] p-8 md:p-12 mb-16 relative overflow-hidden">
-            <div class="max-w-3xl mx-auto">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-                    <div class="space-y-3">
-                        <label class="text-xs font-bold uppercase text-gray-500 ml-2 tracking-widest">Tên Module (Thay thế {user})</label>
-                        <input type="text" id="user" placeholder="Ví dụ: trungnd" 
-                               class="w-full bg-slate-900/50 border border-white/10 p-5 rounded-2xl outline-none focus:border-yellow-500/50 transition-all text-white">
+        <!-- SECTION: CREATOR (MODULE) -->
+        <section id="creator" class="space-y-8">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <i class="fa-solid fa-code text-yellow-500 text-xl"></i>
+                    <h2 class="text-xl font-black uppercase tracking-wider">Tạo Modules Locket Gold</h2>
+                </div>
+                <div class="hidden md:flex items-center gap-2 px-3 py-1 bg-emerald-500/10 rounded-lg border border-emerald-500/20">
+                    <span class="relative flex h-2 w-2">
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                    </span>
+                    <span class="text-[10px] font-bold text-emerald-500 uppercase">Trạng Thái: Hoạt Động</span>
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                <!-- Form Input -->
+                <div class="lg:col-span-7 glass-panel p-8 md:p-10 border-t border-white/5">
+                    <div class="mb-8 p-5 bg-gradient-to-r from-yellow-500/10 to-transparent border-l-4 border-yellow-500 rounded-r-2xl flex items-center justify-between">
+                        <div class="flex items-center gap-4">
+                            <div class="w-10 h-10 bg-yellow-500/20 rounded-full flex items-center justify-center text-yellow-500">
+                                <i class="fas fa-crown"></i>
+                            </div>
+                            <div>
+                                <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none mb-1">Gói áp dụng</p>
+                                <p class="text-sm font-black text-yellow-500 uppercase italic">Locket Gold vĩnh viễn</p>
+                            </div>
+                        </div>
+                        <span class="text-[10px] font-black text-slate-500 opacity-50 italic">Hết hạn: 2999</span>
                     </div>
-                    <div class="space-y-3">
-                        <label class="text-xs font-bold uppercase text-gray-500 ml-2 tracking-widest">Ngày Tham Gia (Thay thế {date})</label>
-                        <input type="date" id="join_date" value="2024-01-01" 
-                               class="w-full bg-slate-900/50 border border-white/10 p-5 rounded-2xl outline-none focus:border-yellow-500/50 transition-all text-gray-300">
+
+                    <div class="space-y-6">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="space-y-3">
+                                <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 flex items-center gap-2">
+                                    <i class="fa-solid fa-user-tag text-[8px]"></i> Định danh người dùng
+                                </label>
+                                <input type="text" id="user" placeholder="Nhập username của bạn..." class="w-full p-4 input-dark text-white font-medium">
+                            </div>
+                            <div class="space-y-3">
+                                <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 flex items-center gap-2">
+                                    <i class="fa-solid fa-calendar-day text-[8px]"></i> Ngày kích hoạt
+                                </label>
+                                <input type="date" id="join_date" value="2024-01-01" class="w-full p-4 input-dark text-white font-medium">
+                            </div>
+                        </div>
+
+                        <button onclick="generate()" id="btnGen" class="w-full py-5 btn-gold uppercase tracking-[0.2em] italic text-sm flex items-center justify-center gap-3">
+                            <i class="fas fa-magic text-xl"></i> TẠO URL CẤU HÌNH
+                        </button>
                     </div>
                 </div>
 
-                <div class="mb-8 p-5 bg-yellow-500/5 border border-yellow-500/20 rounded-2xl flex items-center justify-between">
-                    <div class="flex items-center gap-3">
-                        <i class="fas fa-calendar-check text-yellow-500"></i>
-                        <span class="text-sm font-medium text-gray-400">Hạn sử dụng Module:</span>
-                    </div>
-                    <span class="text-sm font-black text-yellow-500">31/12/2999 (VĨNH VIỄN)</span>
-                </div>
+                <!-- Preview Area -->
+                <div class="lg:col-span-5 flex flex-col gap-6">
+                    <div class="glass-panel p-8 flex-1 flex flex-col justify-center items-center text-center relative overflow-hidden min-h-[300px]">
+                        <div id="result-placeholder" class="space-y-6">
+                            <div class="relative">
+                                <div class="w-20 h-20 bg-white/5 rounded-3xl flex items-center justify-center mx-auto border border-white/5 rotate-12">
+                                    <i class="fa-solid fa-microchip text-3xl text-slate-700"></i>
+                                </div>
+                                <div class="absolute -bottom-2 -right-2 w-8 h-8 bg-slate-800 rounded-full border border-white/10 flex items-center justify-center">
+                                    <i class="fa-solid fa-lock text-xs text-slate-500"></i>
+                                </div>
+                            </div>
+                            <div class="space-y-2">
+                                <p class="text-slate-400 text-[11px] font-black uppercase italic tracking-[0.2em]">Đang chờ dữ liệu</p>
+                            </div>
+                        </div>
 
-                <button onclick="generate()" id="btnGen" class="btn-primary w-full py-6 rounded-2xl text-black font-black text-xl shadow-xl flex items-center justify-center gap-3">
-                    <i class="fas fa-wand-magic-sparkles text-2xl"></i> TẠO MODULE CỦA TÔI
-                </button>
-
-                <div id="resultArea" class="mt-10 hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
-                    <div class="p-8 bg-black/40 border border-yellow-500/20 rounded-[2.5rem] space-y-5 text-center">
-                        <p class="text-xs font-bold text-yellow-500 uppercase tracking-[0.3em]">Cấu hình đã sẵn sàng</p>
-                        <code id="resUrl" class="block p-5 bg-black/60 rounded-xl text-[10px] md:text-xs break-all text-blue-400 border border-white/5 font-mono"></code>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <button onclick="copyLink()" class="bg-white/5 hover:bg-white/10 py-4 rounded-xl font-bold transition flex items-center justify-center gap-2 border border-white/5">
-                                <i class="fas fa-copy"></i> SAO CHÉP LINK
-                            </button>
-                            <a id="quickInstall" href="#" class="bg-yellow-500 hover:bg-yellow-400 text-black py-4 rounded-xl font-bold transition flex items-center justify-center gap-2">
-                                <i class="fas fa-bolt"></i> CÀI NHANH
-                            </a>
+                        <div id="resultArea" class="hidden w-full space-y-6">
+                            <div class="p-6 bg-black/60 rounded-2xl border border-amber-500/30 text-left backdrop-blur-md">
+                                <div class="flex items-center justify-between mb-4">
+                                    <p class="text-[9px] font-bold text-amber-500 uppercase tracking-widest">URL Cấu hình</p>
+                                    <i class="fa-solid fa-shield-halved text-amber-500/50 text-xs"></i>
+                                </div>
+                                <code id="resUrl" class="block text-[11px] text-blue-400 break-all font-mono leading-relaxed bg-blue-500/5 p-4 rounded-xl border border-blue-500/10 mb-2 italic"></code>
+                                <p class="text-[9px] text-slate-500 italic">* Lưu ý: Không chia sẻ liên kết này.</p>
+                            </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <button onclick="copyLink()" class="w-full py-4 bg-white/5 rounded-xl text-[10px] font-black uppercase italic border border-white/10 flex items-center justify-center gap-2">
+                                    <i class="fas fa-copy"></i> Sao chép
+                                </button>
+                                <a id="quickInstall" href="#" class="w-full py-4 bg-yellow-500 text-black rounded-xl text-[10px] font-black uppercase italic text-center flex items-center justify-center gap-2">
+                                    <i class="fas fa-bolt"></i> Cài nhanh
+                                </a>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
+        </section>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-20">
-            <a href="https://t.me/NgDanhThanhTrung" target="_blank" class="glass p-6 rounded-3xl flex items-center gap-4 hover-lift group">
-                <div class="w-12 h-12 bg-sky-500/10 rounded-2xl flex items-center justify-center text-sky-400 group-hover:bg-sky-500 group-hover:text-white transition-all shadow-lg shadow-sky-500/10">
-                    <i class="fab fa-telegram-plane text-xl"></i>
-                </div>
-                <div>
-                    <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Hỗ trợ</p>
-                    <p class="font-bold text-white group-hover:text-sky-400 transition-colors text-sm">Telegram</p>
-                </div>
-            </a>
+        <!-- SECTION: GUIDE -->
+        <section id="guide" class="space-y-10">
+            <div class="flex items-center gap-3">
+                <i class="fa-solid fa-book-open text-yellow-500 text-xl"></i>
+                <h2 class="text-xl font-black uppercase tracking-wider">Hướng Dẫn Cài Đặt Chi Tiết</h2>
+            </div>
 
-            <a href="https://ngdanhthanhtrung.github.io/Bank/" target="_blank" class="glass p-6 rounded-3xl flex items-center gap-4 hover-lift group">
-                <div class="w-12 h-12 bg-rose-500/10 rounded-2xl flex items-center justify-center text-rose-500 group-hover:bg-rose-500 group-hover:text-white transition-all shadow-lg shadow-rose-500/10">
-                    <i class="fas fa-heart text-xl"></i>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                <div class="step-card">
+                    <span class="step-number">01</span>
+                    <div class="mb-4 text-yellow-500/50 text-2xl"><i class="fa-solid fa-keyboard"></i></div>
+                    <h3 class="text-[11px] font-black uppercase italic mb-3 tracking-widest text-white">Bước 1: Khởi Tạo</h3>
+                    <p class="text-[10px] text-slate-400 italic leading-relaxed">
+                        Nhập <span class="text-white font-bold">Username</span> và <span class="text-white font-bold">Ngày</span>. Nhấn "Tạo URL" để hệ thống xuất link Module cá nhân.
+                    </p>
                 </div>
-                <div>
-                    <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Duy trì</p>
-                    <p class="font-bold text-white group-hover:text-rose-400 transition-colors text-sm">Donate</p>
+                <div class="step-card">
+                    <span class="step-number">02</span>
+                    <div class="mb-4 text-blue-500/50 text-2xl"><i class="fa-solid fa-link"></i></div>
+                    <h3 class="text-[11px] font-black uppercase italic mb-3 tracking-widest text-white">Bước 2: Sao Chép</h3>
+                    <p class="text-[10px] text-slate-400 italic leading-relaxed">
+                        Dùng nút <span class="text-white font-bold">Sao chép link</span>. Sau đó mở ứng dụng <span class="text-white font-bold">Shadowrocket</span> trên iPhone/iPad.
+                    </p>
                 </div>
-            </a>
-
-            <a href="https://www.facebook.com/ThanhTrung53" target="_blank" class="glass p-6 rounded-3xl flex items-center gap-4 hover-lift group">
-                <div class="w-12 h-12 bg-blue-600/10 rounded-2xl flex items-center justify-center text-blue-500 group-hover:bg-blue-600 group-hover:text-white transition-all shadow-lg shadow-blue-600/10">
-                    <i class="fab fa-facebook-f text-xl"></i>
+                <div class="step-card">
+                    <span class="step-number">03</span>
+                    <div class="mb-4 text-emerald-500/50 text-2xl"><i class="fa-solid fa-gears"></i></div>
+                    <h3 class="text-[11px] font-black uppercase italic mb-3 tracking-widest text-white">Bước 3: Cấu Hình</h3>
+                    <p class="text-[10px] text-slate-400 italic leading-relaxed">
+                        Vào <span class="text-white font-bold">Module</span> -> Nhấn dấu <span class="text-white font-bold">(+)</span> -> Dán URL -> <span class="text-white font-bold">Lưu</span> và gạt bật Module đó.
+                    </p>
                 </div>
-                <div>
-                    <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Cá nhân</p>
-                    <p class="font-bold text-white group-hover:text-blue-400 transition-colors text-sm">Facebook</p>
-                </div>
-            </a>
-
-            <div class="glass p-6 rounded-3xl flex items-center gap-4">
-                <div class="w-12 h-12 bg-emerald-500/10 rounded-2xl flex items-center justify-center text-emerald-500">
-                    <span class="relative flex h-3 w-3">
-                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                        <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
-                    </span>
-                </div>
-                <div>
-                    <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Hệ thống</p>
-                    <p class="font-bold text-emerald-400 text-sm">Online 24/7</p>
+                <div class="step-card">
+                    <span class="step-number">04</span>
+                    <div class="mb-4 text-rose-500/50 text-2xl"><i class="fa-solid fa-certificate"></i></div>
+                    <h3 class="text-[11px] font-black uppercase italic mb-3 tracking-widest text-white">Bước 4: Tin Cậy</h3>
+                    <p class="text-[10px] text-slate-400 italic leading-relaxed">
+                        Vào <span class="text-white font-bold">Cài đặt iOS</span> -> Chung -> Giới thiệu -> <span class="text-white font-bold">Tin cậy chứng nhận</span> -> Bật cho Shadowrocket.
+                    </p>
                 </div>
             </div>
-        </div>
+        </section>
 
-        <footer class="text-center pb-12 opacity-40 text-[10px] font-bold tracking-[0.3em] uppercase">
-            © 2026 Developed by NgDanhThanhTrung
+        <!-- SECTION: RENTAL & SUPPORT -->
+        <section id="rental" class="space-y-8 pt-8 border-t border-white/5">
+            <div class="flex items-center gap-3">
+                <i class="fa-solid fa-headset text-red-500 text-xl"></i>
+                <h2 class="text-xl font-black uppercase tracking-wider">Dịch Vụ Hỗ Trợ</h2>
+            </div>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Rental Card -->
+                <div class="glass-panel p-8 border-l-8 border-l-red-600/50 flex flex-col md:flex-row items-center gap-8 relative overflow-hidden group">
+                    <div class="flex-1 space-y-6 relative z-10">
+                        <h2 class="text-3xl font-black uppercase italic">Thuê ID Apple Tải App</h2>
+                        <p class="text-xs text-slate-400 max-w-md leading-relaxed italic">Cung cấp tài khoản Apple ID có sẵn các ứng dụng Proxy trả phí như Shadowrocket, Quantumult X. Giao dịch trực tiếp qua Facebook.</p>
+                        <div class="flex flex-wrap gap-3">
+                            <a href="https://www.facebook.com/ThanhTrung53" target="_blank" class="px-6 py-4 bg-red-600 text-white rounded-xl font-black uppercase text-[10px] italic shadow-xl hover:bg-red-700 transition-all flex items-center gap-2">
+                                <i class="fa-brands fa-facebook-messenger"></i> Facebook
+                            </a>
+                            <a href="https://t.me/thanhtrung53" target="_blank" class="px-6 py-4 bg-blue-500 text-white rounded-xl font-black uppercase text-[10px] italic shadow-xl hover:bg-blue-600 transition-all flex items-center gap-2">
+                                <i class="fa-brands fa-telegram"></i> Telegram
+                            </a>
+                        </div>
+                    </div>
+                    <div class="qr-wrapper group-hover:scale-110 transition-transform duration-500">
+                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://www.facebook.com/ThanhTrung53" alt="Admin QR">
+                    </div>
+                </div>
+
+                <!-- Donate Card -->
+                <div class="glass-panel p-8 border-l-8 border-l-yellow-500/50 flex flex-col md:flex-row items-center gap-8 relative overflow-hidden group">
+                    <div class="flex-1 space-y-6 relative z-10">
+                        <h2 class="text-3xl font-black uppercase italic">Ủng Hộ (Donate)</h2>
+                        <p class="text-xs text-slate-400 max-w-md leading-relaxed italic">Nếu bạn yêu thích công cụ này, hãy mời tôi một ly cà phê để duy trì máy chủ cấu hình.</p>
+                        <div class="flex flex-wrap gap-3">
+                            <a href="https://ngdanhthanhtrung.github.io/Bank/" target="_blank" class="px-6 py-4 bg-yellow-500 text-black rounded-xl font-black uppercase text-[10px] italic shadow-xl hover:bg-yellow-600 transition-all flex items-center gap-2">
+                                <i class="fa-solid fa-heart"></i> Gửi ủng hộ ngay
+                            </a>
+                        </div>
+                    </div>
+                    <div class="qr-wrapper group-hover:rotate-6 transition-transform duration-500">
+                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://ngdanhthanhtrung.github.io/Bank/" alt="Donate QR">
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- FOOTER -->
+        <footer class="mt-20 text-center pb-12 opacity-40">
+            <p class="text-[9px] font-black uppercase tracking-[0.6em] italic">© 2026 NgDanhThanhTrung • v4.0 Stable</p>
         </footer>
     </div>
 
-    <div id="toast" class="fixed bottom-10 left-1/2 -translate-x-1/2 glass px-8 py-4 rounded-full text-white border border-yellow-500/30 opacity-0 translate-y-10 transition-all duration-500 pointer-events-none z-50 text-sm font-bold">
-        <i class="fas fa-check-circle text-yellow-500 mr-2"></i> ĐÃ SAO CHÉP LIÊN KẾT!
+    <!-- TOAST -->
+    <div id="toast" class="fixed bottom-10 left-1/2 -translate-x-1/2 glass-panel px-8 py-4 text-white border border-yellow-500/30 opacity-0 translate-y-10 transition-all duration-500 pointer-events-none z-50 text-[10px] font-black uppercase italic">
+        Đã sao chép liên kết thành công
     </div>
 
     <script>
         async function generate() {
             const user = document.getElementById('user').value.trim();
-            const join_date = document.getElementById('join_date').value; // Định dạng YYYY-MM-DD
+            const join_date = document.getElementById('join_date').value;
             const btn = document.getElementById('btnGen');
             
             if(!user || !join_date) {
-                alert("Vui lòng nhập tên người dùng và chọn ngày tham gia!");
+                alert("Vui lòng điền thông tin!");
                 return;
             }
 
             btn.disabled = true;
-            btn.innerHTML = '<i class="fas fa-spinner animate-spin text-2xl"></i> ĐANG KHỞI TẠO...';
+            btn.innerHTML = '<i class="fas fa-sync-alt animate-spin text-xl"></i> ĐANG XỬ LÝ...';
 
             try {
+                // Gọi API thật để xử lý khởi tạo module
                 const response = await fetch('/api/generate', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ 
-                        user: user, 
-                        join_date: join_date // Gửi join_date để backend gán vào biến {date}
-                    })
+                    body: JSON.stringify({ user, join_date })
                 });
                 
                 const data = await response.json();
-                
+
                 if(data.success) {
+                    document.getElementById('result-placeholder').classList.add('hidden');
                     document.getElementById('resultArea').classList.remove('hidden');
                     document.getElementById('resUrl').innerText = data.url;
                     document.getElementById('quickInstall').href = `shadowrocket://config/add/${data.url}`;
-                    btn.innerHTML = '<i class="fas fa-check"></i> TẠO THÀNH CÔNG!';
-                } else {
-                    alert("Lỗi: " + data.error);
+                    btn.innerHTML = '<i class="fas fa-check"></i> HOÀN TẤT';
                     btn.disabled = false;
-                    btn.innerHTML = 'TẠO MODULE CỦA TÔI';
+                } else {
+                    alert("Lỗi: " + (data.error || "Không thể tạo module"));
+                    btn.disabled = false;
+                    btn.innerHTML = 'THỬ LẠI';
                 }
             } catch (err) {
-                alert("Không thể kết nối với Server!");
                 btn.disabled = false;
-                btn.innerHTML = 'TẠO MODULE CỦA TÔI';
+                btn.innerHTML = 'LỖI KẾT NỐI';
             }
         }
 
         function copyLink() {
             const text = document.getElementById('resUrl').innerText;
-            navigator.clipboard.writeText(text).then(() => {
-                const toast = document.getElementById('toast');
-                toast.classList.remove('opacity-0', 'translate-y-10');
-                toast.classList.add('opacity-100', 'translate-y-0');
-                setTimeout(() => {
-                    toast.classList.add('opacity-0', 'translate-y-10');
-                    toast.classList.remove('opacity-100', 'translate-y-0');
-                }, 3000);
-            });
+            const el = document.createElement('textarea');
+            el.value = text;
+            document.body.appendChild(el);
+            el.select();
+            document.execCommand('copy');
+            document.body.removeChild(el);
+
+            const toast = document.getElementById('toast');
+            toast.classList.remove('opacity-0', 'translate-y-10');
+            toast.classList.add('opacity-100', 'translate-y-0');
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-10');
+                toast.classList.remove('opacity-100', 'translate-y-0');
+            }, 2000);
         }
     </script>
 </body>
