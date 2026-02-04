@@ -1,4 +1,4 @@
-import os, json, logging, threading, asyncio, re
+import os, json, logging, threading, asyncio, re, uuid
 import gspread
 from functools import lru_cache
 from datetime import datetime
@@ -89,6 +89,47 @@ revenuecat = type=http-response, pattern=^https:\\/\\/api\\.revenuecat\\.com\\/.
 deleteHeader = type=http-request, pattern=^https:\\/\\/api\\.revenuecat\\.com\\/.+\\/(receipts|subscribers), script-path=https://raw.githubusercontent.com/NgDanhThanhTrung/locket_/main/Locket_NDTT/deleteHeader.js, timeout=60
 [MITM]
 hostname = %APPEND% api.revenuecat.com"""
+
+NEXTDNS_MOBILECONFIG = """<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>PayloadContent</key>
+    <array>
+        <dict>
+            <key>DNSSettings</key>
+            <dict>
+                <key>DNSProtocol</key>
+                <string>HTTPS</string>
+                <key>ServerURL</key>
+                <string>https://apple.nextdns.io/{dns_id}</string>
+            </dict>
+            <key>PayloadDescription</key>
+            <string>NextDNS Configuration - {dns_id}</string>
+            <key>PayloadDisplayName</key>
+            <string>NextDNS ({dns_id})</string>
+            <key>PayloadIdentifier</key>
+            <string>com.nextdns.apple.{dns_id}</string>
+            <key>PayloadType</key>
+            <string>com.apple.dnsSettings.managed</string>
+            <key>PayloadUUID</key>
+            <string>{uuid1}</string>
+            <key>PayloadVersion</key>
+            <integer>1</integer>
+        </dict>
+    </array>
+    <key>PayloadDisplayName</key>
+    <string>NextDNS - {dns_id}</string>
+    <key>PayloadIdentifier</key>
+    <string>com.nextdns.config.{dns_id}</string>
+    <key>PayloadType</key>
+    <string>Configuration</string>
+    <key>PayloadUUID</key>
+    <string>{uuid2}</string>
+    <key>PayloadVersion</key>
+    <integer>1</integer>
+</dict>
+</plist>"""
 
 def get_sheets():
     creds_raw = os.getenv("GOOGLE_CREDS")
@@ -216,7 +257,37 @@ async def get_bundle(u: Update, c: ContextTypes.DEFAULT_TYPE):
         await status.edit_text(f"✅ Thành công!\n<code>{mod_url}</code>", parse_mode=ParseMode.HTML)
     except Exception as e:
         await status.edit_text(f"❌ Lỗi: {e}")
+
+async def get_nextdns(u: Update, c: ContextTypes.DEFAULT_TYPE):
+    await auto_reg(u, *get_sheets()[1:4]) [cite: 1]
+    if not c.args:
+        return await u.message.reply_text("⚠️ Cú pháp: /nextdns [ID_NextDNS]\nVí dụ: `/nextdns abc123`", parse_mode=ParseMode.MARKDOWN)
+    
+    dns_id = c.args[0].strip()
+    status = await u.message.reply_text("⏳ Đang khởi tạo file .mobileconfig...")
+    
+    try:
+        content = NEXTDNS_MOBILECONFIG.format(
+            dns_id=dns_id,
+            uuid1=str(uuid.uuid4()),
+            uuid2=str(uuid.uuid4())
+        )
         
+        file_path = f"NextDNS_{dns_id}.mobileconfig"
+        with open(file_path, "w", encoding="utf-8") as f:
+            f.write(content)
+        
+        await u.message.reply_document(
+            document=open(file_path, "rb"),
+            filename=file_path,
+            caption=f"✅ Đã tạo cấu hình NextDNS cho ID: `{dns_id}`\n\n📌 **Cài đặt:** Tải về -> Cài đặt máy -> Đã tải về hồ sơ -> Cài đặt.",
+            parse_mode=ParseMode.MARKDOWN
+        )
+        os.remove(file_path)
+        await status.delete()
+    except Exception as e:
+        await status.edit_text(f"❌ Lỗi: {e}")
+
 async def send_module_list(u: Update, c: ContextTypes.DEFAULT_TYPE):
     s_m, s_u, s_a, s_d = get_sheets()
     m_list = "<b>📂 DANH SÁCH MODULE HỆ THỐNG:</b>\n\n" + "\n".join([f"🔹 /{r['key']} - {r['title']}" for r in s_m.get_all_records()])
@@ -319,10 +390,10 @@ async def post_init(app):
     await app.bot.set_my_commands([
         BotCommand("start","Bắt đầu"), 
         BotCommand("list","Danh sách"), 
+        BotCommand("nextdns", "Tạo file NextDNS"),
         BotCommand("profile","Hồ sơ"), 
         BotCommand("hdsd","Hướng dẫn")
     ])
-
 if __name__ == "__main__":
     threading.Thread(target=lambda: server.run(host="0.0.0.0", port=PORT), daemon=True).start()
     app = ApplicationBuilder().token(TOKEN).post_init(post_init).build()
@@ -330,6 +401,7 @@ if __name__ == "__main__":
     app.add_handler(CommandHandler("profile", profile))
     app.add_handler(CommandHandler("hdsd", hdsd))
     app.add_handler(CommandHandler("get", get_bundle))
+    app.add_handler(CommandHandler("nextdns", get_nextdns))
     app.add_handler(CommandHandler("list", send_module_list))
     app.add_handler(CommandHandler("stats", stats))
     app.add_handler(CommandHandler("setlink", set_link))
