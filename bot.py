@@ -28,6 +28,7 @@ REPO_NAME = "NgDanhThanhTrung/locket_"
 PORT = int(os.getenv("PORT", "8000"))
 CONTACT_URL = "https://t.me/NgDanhThanhTrung"
 DONATE_URL = "https://ngdanhthanhtrung.github.io/Bank/"
+KOYEB_URL = "https://judicial-hali-ngdthanhtrung-c1fe28c3.koyeb.app/"
 WEB_URL = "https://ngdanhthanhtrung.github.io/Modules-NDTT-Premium/"
 
 logging.basicConfig(level=logging.INFO)
@@ -131,19 +132,40 @@ async def auto_reg(u: Update, s_u, s_d):
 
 def get_kb(include_list=False):
     kb = []
-    if include_list: kb.append([InlineKeyboardButton("📂 Danh sách Module", callback_data="show_list")])
-    kb.append([InlineKeyboardButton("💬 Liên hệ", url=CONTACT_URL), InlineKeyboardButton("☕ Donate", url=DONATE_URL)])
-    kb.append([InlineKeyboardButton("✨ Web Hướng Dẫn", url=WEB_URL)])
-    return InlineKeyboardMarkup(kb)
+    kb.append([InlineKeyboardButton("🌐 Mở Web Dashboard (Koyeb)", url=KOYEB_URL)])
+    if include_list: 
+        kb.append([InlineKeyboardButton("📂 Danh sách Module", callback_data="show_list")])
+    kb.append([
+        InlineKeyboardButton("💬 Liên hệ", url=CONTACT_URL), 
+        InlineKeyboardButton("☕ Donate", url=DONATE_URL)
+    ])
+    kb.append([InlineKeyboardButton("✨ Web Hướng Dẫn (GitHub)", url=WEB_URL)])
+    return InlineKeyboardMarkup(kb))
 
 async def start(u: Update, c: ContextTypes.DEFAULT_TYPE):
     s_m, s_u, s_a, s_d = get_sheets()
     await auto_reg(u, s_u, s_d)
-    txt = (f"👋 Chào mừng <b>{u.effective_user.first_name}</b> đến với Bot của NgDanhThanhTrung!\n\n"
-           f"🔹 Bot hỗ trợ lấy link Module Shadowrocket và tạo script Locket Gold riêng.\n"
-           f"🔹 Nhấn nút <b>Danh sách Module</b> bên dưới để xem các script có sẵn.\n"
-           f"🔹 Gõ /hdsd để xem cách cài đặt HTTPS Decryption.")
-    await u.message.reply_text(txt, parse_mode=ParseMode.HTML, reply_markup=get_kb(True))
+    txt = (
+        f"👋 Chào mừng <b>{u.effective_user.first_name}</b> đến với <b>@NgDanhThanhTrung_BOT</b>!\n\n"
+        f"🚀 <b>Tính năng chính:</b>\n"
+        f"🔹 Hỗ trợ tạo Module Shadowrocket cá nhân hóa.\n"
+        f"🔹 Tự động kích hoạt script Locket Gold vĩnh viễn.\n"
+        f"🔹 Dashboard Web mượt mà, dễ sử dụng.\n\n"
+        f"🌐 <b>Web Dashboard:</b>\n"
+        f"<code>{KOYEB_URL}</code>\n\n"
+        f"📝 <b>Hướng dẫn:</b>\n"
+        f"• Nhấn nút <b>Danh sách Module</b> bên dưới để xem script.\n"
+        f"• Gõ <code>/get Tên | Ngày</code> để tạo script riêng.\n"
+        f"• Gõ /hdsd để xem cách cài đặt <b>HTTPS Decryption</b>.\n\n"
+        f"👨‍💻 <b>Admin:</b> @NgDanhThanhTrung"
+    )
+    
+    await u.message.reply_text(
+        txt, 
+        parse_mode=ParseMode.HTML, 
+        reply_markup=get_kb(True),
+        disable_web_page_preview=False
+    )
 
 async def hdsd(u: Update, c: ContextTypes.DEFAULT_TYPE):
     s_m, s_u, s_a, s_d = get_sheets()
