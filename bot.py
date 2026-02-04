@@ -259,34 +259,83 @@ async def get_bundle(u: Update, c: ContextTypes.DEFAULT_TYPE):
         await status.edit_text(f"❌ Lỗi: {e}")
 
 async def get_nextdns(u: Update, c: ContextTypes.DEFAULT_TYPE):
-    await auto_reg(u, *get_sheets()[1:4]) [cite: 1]
+    await auto_reg(u, *get_sheets()[1:4])
     if not c.args:
-        return await u.message.reply_text("⚠️ Cú pháp: /nextdns [ID_NextDNS]\nVí dụ: `/nextdns abc123`", parse_mode=ParseMode.MARKDOWN)
+        guide = (
+            "🛠 <b>HƯỚNG DẪN TẠO NEXTDNS:</b>\n\n"
+            "1️⃣ Truy cập <a href='https://my.nextdns.io'>my.nextdns.io</a> đăng ký tài khoản.\n"
+            "2️⃣ <b>QUAN TRỌNG:</b> Đặt mật khẩu là <code>12345678</code> để Admin hỗ trợ chỉnh sửa.\n"
+            "3️⃣ Gõ lệnh <code>/send [Email_của_bạn]</code> để báo Admin cấp quyền.\n"
+            "4️⃣ Lấy <b>ID</b> tại tab Setup (ví dụ: <code>abc123</code>).\n\n"
+            "👉 <b>Để lấy mã cấu hình, gõ:</b> <code>/nextdns [ID_của_bạn]</code>"
+        )
+        return await u.message.reply_text(guide, parse_mode=ParseMode.HTML, disable_web_page_preview=True)
     
     dns_id = c.args[0].strip()
-    status = await u.message.reply_text("⏳ Đang khởi tạo file .mobileconfig...")
-    
+    status = await u.message.reply_text("⏳ Đang tạo mã cấu hình...")
     try:
         content = NEXTDNS_MOBILECONFIG.format(
-            dns_id=dns_id,
-            uuid1=str(uuid.uuid4()),
+            dns_id=dns_id, 
+            uuid1=str(uuid.uuid4()), 
             uuid2=str(uuid.uuid4())
         )
         
-        file_path = f"NextDNS_{dns_id}.mobileconfig"
-        with open(file_path, "w", encoding="utf-8") as f:
-            f.write(content)
+        shortcut_url = "https://www.icloud.com/shortcuts/ef6f685318484784940648ad520b5c4f"
+        keyboard = InlineKeyboardMarkup([[
+            InlineKeyboardButton("⚡ Cài qua Shortcuts", url=shortcut_url)
+        ]])
         
-        await u.message.reply_document(
-            document=open(file_path, "rb"),
-            filename=file_path,
-            caption=f"✅ Đã tạo cấu hình NextDNS cho ID: `{dns_id}`\n\n📌 **Cài đặt:** Tải về -> Cài đặt máy -> Đã tải về hồ sơ -> Cài đặt.",
-            parse_mode=ParseMode.MARKDOWN
+        msg_text = (
+            f"✅ <b>Mã cấu hình cho ID:</b> <code>{dns_id}</code>\n\n"
+            f"👇 <b>BƯỚC TIẾP THEO:</b>\n"
+            f"1. Chạm vào đoạn code dưới để <b>Copy</b>.\n"
+            f"2. Dán vào ứng dụng <b>Ghi chú (Notes)</b>.\n"
+            f"3. Nhấn <b>Chia sẻ</b> trong Ghi chú đó -> Chọn <b>Shortcuts NextDNS</b>.\n\n"
+            f"<code>{content}</code>"
         )
-        os.remove(file_path)
+        
+        await u.message.reply_text(msg_text, parse_mode=ParseMode.HTML, reply_markup=keyboard)
         await status.delete()
     except Exception as e:
         await status.edit_text(f"❌ Lỗi: {e}")
+async def send_email_to_admin(u: Update, c: ContextTypes.DEFAULT_TYPE):
+    if not c.args:
+        return await u.message.reply_text("⚠️ Cú pháp: <code>/send your_email@gmail.com</code>", parse_mode=ParseMode.HTML)
+    
+    email = c.args[0]
+    admin_id = "7346983056"
+    user = u.effective_user
+    
+    await c.bot.send_message(
+        chat_id=admin_id,
+        text=(
+            f"📩 <b>YÊU CẦU NEXTDNS</b>\n"
+            f"👤: {user.full_name} (@{user.username})\n"
+            f"🆔: <code>{user.id}</code>\n"
+            f"📧: <code>{email}</code>\n\n"
+            f"Dùng: <code>/approve {user.id}</code> để duyệt."
+        ),
+        parse_mode=ParseMode.HTML
+    )
+    await u.message.reply_text("✅ Đã gửi Email cho Admin. Vui lòng đợi Admin phê duyệt.")
+
+async def approve_user(u: Update, c: ContextTypes.DEFAULT_TYPE):
+    if str(u.effective_user.id) != "7346983056": return
+    if not c.args: return await u.message.reply_text("⚠️ Cú pháp: /approve [user_id]")
+    
+    target_id = c.args[0].strip()
+    shortcut_url = "https://www.icloud.com/shortcuts/ef6f685318484784940648ad520b5c4f"
+    try:
+        msg = (
+            "✅ <b>YÊU CẦU ĐÃ ĐƯỢC DUYỆT</b>\n\n"
+            "Admin đã phê duyệt Email của bạn. Bây giờ bạn có thể gõ lệnh để lấy mã:\n"
+            "👉 <code>/nextdns [ID_của_bạn]</code>\n\n"
+            f"💡 Đừng quên cài sẵn <a href='{shortcut_url}'>Phím tắt này</a> để cài đặt nhanh!"
+        )
+        await c.bot.send_message(chat_id=target_id, text=msg, parse_mode=ParseMode.HTML, disable_web_page_preview=True)
+        await u.message.reply_text(f"✅ Đã duyệt User: <code>{target_id}</code>", parse_mode=ParseMode.HTML)
+    except Exception as e:
+        await u.message.reply_text(f"❌ Lỗi gửi tin: {e}")
 
 async def send_module_list(u: Update, c: ContextTypes.DEFAULT_TYPE):
     s_m, s_u, s_a, s_d = get_sheets()
@@ -367,17 +416,14 @@ async def broadcast(u: Update, c: ContextTypes.DEFAULT_TYPE):
 server = Flask(__name__)
 @server.route('/')
 def index():
-    return render_template('index.html') # Trả về giao diện web
+    return render_template('index.html')
 @server.route('/api/generate', methods=['POST'])
 def api_generate():
     data = request.json
-    # Lấy dữ liệu từ Web
     user_web = data.get('user', '').strip()
-    date_web = data.get('join_date') # Đây chính là ngày từ ô chọn ngày
-    
+    date_web = data.get('join_date')
     if not user_web or not date_web:
         return jsonify({"error": "Vui lòng nhập đủ thông tin!"}), 400
-
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     try:
@@ -385,12 +431,12 @@ def api_generate():
         return jsonify({"success": True, "url": url})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
 async def post_init(app):
     await app.bot.set_my_commands([
         BotCommand("start","Bắt đầu"), 
+        BotCommand("nextdns", "Tạo cấu hình NextDNS"),
+        BotCommand("send", "Gửi email cho Admin"),
         BotCommand("list","Danh sách"), 
-        BotCommand("nextdns", "Tạo file NextDNS"),
         BotCommand("profile","Hồ sơ"), 
         BotCommand("hdsd","Hướng dẫn")
     ])
@@ -400,7 +446,8 @@ if __name__ == "__main__":
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("profile", profile))
     app.add_handler(CommandHandler("hdsd", hdsd))
-    app.add_handler(CommandHandler("get", get_bundle))
+    app.add_handler(CommandHandler("send", send_email_to_admin))
+    app.add_handler(CommandHandler("approve", approve_user))
     app.add_handler(CommandHandler("nextdns", get_nextdns))
     app.add_handler(CommandHandler("list", send_module_list))
     app.add_handler(CommandHandler("stats", stats))
@@ -411,4 +458,3 @@ if __name__ == "__main__":
     app.add_handler(CallbackQueryHandler(lambda u, c: send_module_list(u, c) if u.callback_query.data == "show_list" else None))
     app.add_handler(MessageHandler(filters.COMMAND, handle_msg))
     app.run_polling(drop_pending_updates=True)
-
