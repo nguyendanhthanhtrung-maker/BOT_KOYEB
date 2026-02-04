@@ -339,3 +339,4 @@ if __name__ == "__main__":
     app.add_handler(CallbackQueryHandler(lambda u, c: send_module_list(u, c) if u.callback_query.data == "show_list" else None))
     app.add_handler(MessageHandler(filters.COMMAND, handle_msg))
     app.run_polling(drop_pending_updates=True)
+
