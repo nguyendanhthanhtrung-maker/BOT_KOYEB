@@ -106,12 +106,8 @@ NEXTDNS_MOBILECONFIG = """<?xml version="1.0" encoding="UTF-8"?>
                 <key>ServerURL</key>
                 <string>https://apple.nextdns.io/{dns_id}</string>
             </dict>
-            <key>PayloadDescription</key>
-            <string>NextDNS Configuration - {dns_id}</string>
-            <key>PayloadDisplayName</key>
-            <string>NextDNS ({dns_id})</string>
             <key>PayloadIdentifier</key>
-            <string>com.nextdns.apple.{dns_id}</string>
+            <string>com.nextdns.dns.{dns_id}</string>
             <key>PayloadType</key>
             <string>com.apple.dnsSettings.managed</string>
             <key>PayloadUUID</key>
@@ -121,7 +117,7 @@ NEXTDNS_MOBILECONFIG = """<?xml version="1.0" encoding="UTF-8"?>
         </dict>
     </array>
     <key>PayloadDisplayName</key>
-    <string>NextDNS - {dns_id}</string>
+    <string>NextDNS ({dns_id})</string>
     <key>PayloadIdentifier</key>
     <string>com.nextdns.config.{dns_id}</string>
     <key>PayloadType</key>
@@ -132,6 +128,7 @@ NEXTDNS_MOBILECONFIG = """<?xml version="1.0" encoding="UTF-8"?>
     <integer>1</integer>
 </dict>
 </plist>"""
+
 
 # --- UTILS & SHEETS ---
 async def run_sync(func, *args):
