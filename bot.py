@@ -474,6 +474,22 @@ def api_generate():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@server.route('/api/nextdns', methods=['POST'])
+def api_nextdns():
+    data = request.json
+    dns_id = data.get('dns_id', '').strip()
+    if not dns_id:
+        return jsonify({"error": "Vui lòng nhập DNS ID!"}), 400
+    try:
+        config_xml = NEXTDNS_MOBILECONFIG.format(
+            dns_id=dns_id,
+            uuid1=str(uuid.uuid4()),
+            uuid2=str(uuid.uuid4())
+        )
+        return jsonify({"success": True, "config": config_xml})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 async def post_init(app):
     await app.bot.set_my_commands([
         BotCommand("start","Bắt đầu"), 
