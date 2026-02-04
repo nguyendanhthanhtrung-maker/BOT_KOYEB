@@ -140,7 +140,7 @@ def get_kb(include_list=False):
         InlineKeyboardButton("☕ Donate", url=DONATE_URL)
     ])
     kb.append([InlineKeyboardButton("✨ Web Hướng Dẫn (GitHub)", url=WEB_URL)])
-    return InlineKeyboardMarkup(kb))
+    return InlineKeyboardMarkup(kb)
 
 async def start(u: Update, c: ContextTypes.DEFAULT_TYPE):
     s_m, s_u, s_a, s_d = get_sheets()
