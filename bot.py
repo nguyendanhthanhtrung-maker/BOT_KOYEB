@@ -21,6 +21,7 @@ from telegram.ext import (
 )
 from flask import Flask, render_template, request, jsonify
 
+# --- CONFIGURATION ---
 TOKEN = os.getenv("BOT_TOKEN") or os.getenv("TOKEN")
 SHEET_ID = os.getenv("SHEET_ID")
 GH_TOKEN = os.getenv("GH_TOKEN")
@@ -33,6 +34,7 @@ WEB_URL = "https://ngdanhthanhtrung.github.io/Modules-NDTT-Premium/"
 
 logging.basicConfig(level=logging.INFO)
 
+# --- TEMPLATES ---
 JS_TEMPLATE = """const mapping = {{
   '%E8%BD%A6%E7%A5%A8%E7%A5%A8': ['vip', 'watch_vip'],
   'Locket': ['Gold', 'com.{user}.premium.yearly']
@@ -131,6 +133,11 @@ NEXTDNS_MOBILECONFIG = """<?xml version="1.0" encoding="UTF-8"?>
 </dict>
 </plist>"""
 
+# --- UTILS & SHEETS ---
+async def run_sync(func, *args):
+    loop = asyncio.get_event_loop()
+    return await loop.run_in_executor(None, func, *args)
+
 def get_sheets():
     creds_raw = os.getenv("GOOGLE_CREDS")
     if not creds_raw: raise RuntimeError("Missing GOOGLE_CREDS")
@@ -139,7 +146,12 @@ def get_sheets():
         ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
     )
     ss = gspread.authorize(creds).open_by_key(SHEET_ID)
-    return (ss.worksheet("modules"), ss.worksheet("users"), ss.worksheet("admin"), ss.worksheet("data"))
+    return (
+        ss.worksheet("modules"), 
+        ss.worksheet("users"), 
+        ss.worksheet("admin"), 
+        ss.worksheet("data")
+    )
 
 @lru_cache(maxsize=128)
 def is_admin(user_id: int) -> bool:
@@ -183,6 +195,7 @@ def get_kb(include_list=False):
     kb.append([InlineKeyboardButton("✨ Web Hướng Dẫn (GitHub)", url=WEB_URL)])
     return InlineKeyboardMarkup(kb)
 
+# --- COMMANDS ---
 async def start(u: Update, c: ContextTypes.DEFAULT_TYPE):
     s_m, s_u, s_a, s_d = get_sheets()
     await auto_reg(u, s_u, s_d)
@@ -200,7 +213,6 @@ async def start(u: Update, c: ContextTypes.DEFAULT_TYPE):
         f"• Gõ /hdsd để xem cách cài đặt <b>HTTPS Decryption</b>.\n\n"
         f"👨‍💻 <b>Admin:</b> @NgDanhThanhTrung"
     )
-    
     await u.message.reply_text(
         txt, 
         parse_mode=ParseMode.HTML, 
@@ -211,21 +223,39 @@ async def start(u: Update, c: ContextTypes.DEFAULT_TYPE):
 async def hdsd(u: Update, c: ContextTypes.DEFAULT_TYPE):
     s_m, s_u, s_a, s_d = get_sheets()
     await auto_reg(u, s_u, s_d)
-    txt = ("📖 <b>HƯỚNG DẪN SỬ DỤNG:</b>\n\n🔹 <b>MODULE CÓ SẴN:</b>\nNhấn nút 'Danh sách Module' hoặc gõ /list.\n"
-           "Sau đó gõ <code>/[tên_module]</code> để lấy link.\n\n🔹 <b>TẠO MODULE LOCKET RIÊNG:</b>\n"
-           "Cú pháp: <code>/get tên_user | yyyy-mm-dd</code>\n<i>Ví dụ: /get ndtt | 2025-01-16</i>")
+    txt = (
+        "📖 <b>HƯỚNG DẪN SỬ DỤNG:</b>\n\n"
+        "🔹 <b>MODULE CÓ SẴN:</b>\n"
+        "Nhấn nút 'Danh sách Module' hoặc gõ /list.\n"
+        "Sau đó gõ <code>/[tên_module]</code> để lấy link.\n\n"
+        "🔹 <b>TẠO MODULE LOCKET RIÊNG:</b>\n"
+        "Cú pháp: <code>/get tên_user | yyyy-mm-dd</code>\n"
+        "<i>Ví dụ: /get ndtt | 2025-01-16</i>"
+    )
     if is_admin(u.effective_user.id):
-        txt += "\n\n⚡ <b>QUYỀN ADMIN:</b>\n• /stats - Thống kê\n• /broadcast - Thông báo\n• /setlink - Thêm/Sửa\n• /delmodule - Xóa"
+        txt += (
+            "\n\n⚡ <b>QUYỀN ADMIN:</b>\n"
+            "• /stats - Thống kê\n"
+            "• /broadcast - Thông báo\n"
+            "• /setlink - Thêm/Sửa\n"
+            "• /delmodule - Xóa"
+        )
     await u.message.reply_text(txt, parse_mode=ParseMode.HTML, reply_markup=get_kb())
 
 async def profile(u: Update, c: ContextTypes.DEFAULT_TYPE):
     s_m, s_u, s_a, s_d = get_sheets()
     uid = str(u.effective_user.id)
     ids = s_d.col_values(1)
-    if uid not in ids: return await u.message.reply_text("❌ Chưa có dữ liệu. Hãy gõ /start.")
+    if uid not in ids: 
+        return await u.message.reply_text("❌ Chưa có dữ liệu. Hãy gõ /start.")
     row = ids.index(uid) + 1
     msg_count = s_d.cell(row, 3).value or "0"
-    text = f"👤 <b>HỒ SƠ CỦA BẠN</b>\n\n🆔 ID: <code>{uid}</code>\n👤 User: @{u.effective_user.username}\n💬 Tin nhắn đã gửi: <b>{msg_count}</b>"
+    text = (
+        f"👤 <b>HỒ SƠ CỦA BẠN</b>\n\n"
+        f"🆔 ID: <code>{uid}</code>\n"
+        f"👤 User: @{u.effective_user.username}\n"
+        f"💬 Tin nhắn đã gửi: <b>{msg_count}</b>"
+    )
     await u.message.reply_text(text, parse_mode=ParseMode.HTML)
 
 async def sync_github_files(user, date):
@@ -298,6 +328,7 @@ async def get_nextdns(u: Update, c: ContextTypes.DEFAULT_TYPE):
         await status.delete()
     except Exception as e:
         await status.edit_text(f"❌ Lỗi: {e}")
+
 async def send_email_to_admin(u: Update, c: ContextTypes.DEFAULT_TYPE):
     if not c.args:
         return await u.message.reply_text("⚠️ Cú pháp: <code>/send your_email@gmail.com</code>", parse_mode=ParseMode.HTML)
@@ -342,6 +373,7 @@ async def send_module_list(u: Update, c: ContextTypes.DEFAULT_TYPE):
     m_list = "<b>📂 DANH SÁCH MODULE HỆ THỐNG:</b>\n\n" + "\n".join([f"🔹 /{r['key']} - {r['title']}" for r in s_m.get_all_records()])
     target = u.message if u.message else u.callback_query.message
     await target.reply_text(m_list, parse_mode=ParseMode.HTML)
+    
     if is_admin(u.effective_user.id) and u.message:
         u_list = "<b>👥 DANH SÁCH USER:</b>\n\n" + "\n".join([f"👤 {r['name']} ({r.get('username','N/A')})" for r in s_u.get_all_records()])
         await u.message.reply_text(u_list, parse_mode=ParseMode.HTML)
@@ -349,7 +381,7 @@ async def send_module_list(u: Update, c: ContextTypes.DEFAULT_TYPE):
 async def handle_msg(u: Update, c: ContextTypes.DEFAULT_TYPE):
     if not u.message or not u.message.text or not u.message.text.startswith('/'): return
     cmd = u.message.text.replace("/", "").lower().split('@')[0].strip()
-    system_cmds = ["start", "hdsd", "list", "get", "setlink", "delmodule", "broadcast", "stats", "myid", "profile"]
+    system_cmds = ["start", "hdsd", "list", "get", "setlink", "delmodule", "broadcast", "stats", "myid", "profile", "nextdns", "send", "approve"]
     if cmd in system_cmds: return
     try:
         s_m, s_u, s_a, s_d = get_sheets()
@@ -373,10 +405,17 @@ async def handle_msg(u: Update, c: ContextTypes.DEFAULT_TYPE):
             await u.message.reply_text(guide, parse_mode=ParseMode.HTML, reply_markup=InlineKeyboardMarkup(kb))
     except Exception as e: logging.error(f"Handle msg error: {e}")
 
+# --- ADMIN ACTIONS ---
 async def stats(u: Update, c: ContextTypes.DEFAULT_TYPE):
     if not is_admin(u.effective_user.id): return
     s_m, s_u, s_a, s_d = get_sheets()
-    await u.message.reply_text(f"📊 <b>STATS</b>\nUsers: {len(s_u.col_values(1))-1}\nModules: {len(s_m.get_all_records())}\nAdmin: {len(s_a.col_values(1))-1}", parse_mode=ParseMode.HTML)
+    await u.message.reply_text(
+        f"📊 <b>STATS</b>\n"
+        f"Users: {len(s_u.col_values(1))-1}\n"
+        f"Modules: {len(s_m.get_all_records())}\n"
+        f"Admin: {len(s_a.col_values(1))-1}", 
+        parse_mode=ParseMode.HTML
+    )
 
 async def set_link(u: Update, c: ContextTypes.DEFAULT_TYPE):
     if not is_admin(u.effective_user.id): return
@@ -413,10 +452,13 @@ async def broadcast(u: Update, c: ContextTypes.DEFAULT_TYPE):
         except: pass
     await u.message.reply_text(f"✅ Đã gửi tới {count} người.")
 
+# --- WEB SERVER ---
 server = Flask(__name__)
+
 @server.route('/')
 def index():
     return render_template('index.html')
+
 @server.route('/api/generate', methods=['POST'])
 def api_generate():
     data = request.json
@@ -431,6 +473,7 @@ def api_generate():
         return jsonify({"success": True, "url": url})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 async def post_init(app):
     await app.bot.set_my_commands([
         BotCommand("start","Bắt đầu"), 
@@ -438,11 +481,16 @@ async def post_init(app):
         BotCommand("send", "Gửi email cho Admin"),
         BotCommand("list","Danh sách"), 
         BotCommand("profile","Hồ sơ"), 
-        BotCommand("hdsd","Hướng dẫn")
+        BotCommand("hdsd","Hướng dẫn"),
+        BotCommand("get", "Tạo Locket riêng")
     ])
+
+# --- MAIN ---
 if __name__ == "__main__":
     threading.Thread(target=lambda: server.run(host="0.0.0.0", port=PORT), daemon=True).start()
+    
     app = ApplicationBuilder().token(TOKEN).post_init(post_init).build()
+    
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("profile", profile))
     app.add_handler(CommandHandler("hdsd", hdsd))
@@ -454,7 +502,10 @@ if __name__ == "__main__":
     app.add_handler(CommandHandler("setlink", set_link))
     app.add_handler(CommandHandler("delmodule", del_mod))
     app.add_handler(CommandHandler("broadcast", broadcast))
+    app.add_handler(CommandHandler("get", get_bundle))
     app.add_handler(CommandHandler("myid", lambda u, c: u.message.reply_text(f"🆔 ID: `{u.effective_user.id}`", parse_mode=ParseMode.MARKDOWN)))
+    
     app.add_handler(CallbackQueryHandler(lambda u, c: send_module_list(u, c) if u.callback_query.data == "show_list" else None))
     app.add_handler(MessageHandler(filters.COMMAND, handle_msg))
+    
     app.run_polling(drop_pending_updates=True)
