@@ -286,45 +286,55 @@ async def get_bundle(u: Update, c: ContextTypes.DEFAULT_TYPE):
         await status.edit_text(f"❌ Lỗi: {e}")
 
 async def get_nextdns(u: Update, c: ContextTypes.DEFAULT_TYPE):
-    await auto_reg(u, *get_sheets()[1:4])
-    if not c.args:
-        guide = (
-            "🛠 <b>HƯỚNG DẪN TẠO NEXTDNS:</b>\n\n"
-            "1️⃣ Truy cập <a href='https://my.nextdns.io'>my.nextdns.io</a> đăng ký tài khoản.\n"
-            "2️⃣ <b>QUAN TRỌNG:</b> Đặt mật khẩu là <code>12345678</code> để Admin hỗ trợ chỉnh sửa.\n"
-            "3️⃣ Gõ lệnh <code>/send [Email_của_bạn]</code> để báo Admin cấp quyền.\n"
-            "4️⃣ Lấy <b>ID</b> tại tab Setup (ví dụ: <code>abc123</code>).\n\n"
-            "👉 <b>Để lấy mã cấu hình, gõ:</b> <code>/nextdns [ID_của_bạn]</code>"
-        )
-        return await u.message.reply_text(guide, parse_mode=ParseMode.HTML, disable_web_page_preview=True)
-    
-    dns_id = c.args[0].strip()
-    status = await u.message.reply_text("⏳ Đang tạo mã cấu hình...")
     try:
+        try:
+            await auto_reg(u, *get_sheets()[1:4])
+        except:
+            pass
+
+        if not c.args:
+            guide = (
+                "🛠 <b>HƯỚNG DẪN TẠO NEXTDNS:</b>\n\n"
+                "1️⃣ Truy cập <a href='https://my.nextdns.io'>my.nextdns.io</a> đăng ký tài khoản.\n"
+                "2️⃣ Đặt mật khẩu là <code>12345678</code> để Admin hỗ trợ.\n"
+                "3️⃣ Gõ lệnh <code>/send [Email_của_bạn]</code> để báo Admin.\n"
+                "4️⃣ Lấy <b>ID</b> tại tab Setup (ví dụ: <code>abc123</code>).\n\n"
+                "👉 <b>Để lấy mã cấu hình, gõ:</b> <code>/nextdns [ID_của_bạn]</code>"
+            )
+            return await u.message.reply_text(guide, parse_mode=ParseMode.HTML, disable_web_page_preview=True)
+
+        dns_id = c.args[0].strip()
+        status = await u.message.reply_text("⏳ Đang tạo mã cấu hình...")
+
         content = NEXTDNS_MOBILECONFIG.format(
-            dns_id=dns_id, 
-            uuid1=str(uuid.uuid4()), 
+            dns_id=dns_id,
+            uuid1=str(uuid.uuid4()),
             uuid2=str(uuid.uuid4())
         )
-        
+
         shortcut_url = "https://www.icloud.com/shortcuts/ef6f685318484784940648ad520b5c4f"
         keyboard = InlineKeyboardMarkup([[
             InlineKeyboardButton("⚡ Cài qua Shortcuts", url=shortcut_url)
         ]])
-        
+
         msg_text = (
             f"✅ <b>Mã cấu hình cho ID:</b> <code>{dns_id}</code>\n\n"
             f"👇 <b>BƯỚC TIẾP THEO:</b>\n"
             f"1. Chạm vào đoạn code dưới để <b>Copy</b>.\n"
             f"2. Dán vào ứng dụng <b>Ghi chú (Notes)</b>.\n"
-            f"3. Nhấn <b>Chia sẻ</b> trong Ghi chú đó -> Chọn <b>Shortcuts NextDNS</b>.\n\n"
+            f"3. Nhấn <b>Chia sẻ</b> -> Chọn <b>Shortcuts NextDNS</b>.\n\n"
             f"<code>{content}</code>"
         )
-        
+
         await u.message.reply_text(msg_text, parse_mode=ParseMode.HTML, reply_markup=keyboard)
         await status.delete()
+
     except Exception as e:
-        await status.edit_text(f"❌ Lỗi: {e}")
+        logging.error(f"Error: {e}")
+        if 'status' in locals():
+            await status.edit_text(f"❌ Lỗi: {str(e)}")
+        else:
+            await u.message.reply_text(f"❌ Lỗi: {str(e)}")
 
 async def send_email_to_admin(u: Update, c: ContextTypes.DEFAULT_TYPE):
     if not c.args:
