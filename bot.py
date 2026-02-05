@@ -317,13 +317,16 @@ async def get_nextdns(u: Update, c: ContextTypes.DEFAULT_TYPE):
             InlineKeyboardButton("⚡ Cài qua Shortcuts", url=shortcut_url)
         ]])
 
+        import html
+        safe_content = html.escape(content)
+
         msg_text = (
             f"✅ <b>Mã cấu hình cho ID:</b> <code>{dns_id}</code>\n\n"
             f"👇 <b>BƯỚC TIẾP THEO:</b>\n"
             f"1. Chạm vào đoạn code dưới để <b>Copy</b>.\n"
             f"2. Dán vào ứng dụng <b>Ghi chú (Notes)</b>.\n"
             f"3. Nhấn <b>Chia sẻ</b> -> Chọn <b>Shortcuts NextDNS</b>.\n\n"
-            f"<code>{content}</code>"
+            f"<pre>{safe_content}</pre>"
         )
 
         await u.message.reply_text(msg_text, parse_mode=ParseMode.HTML, reply_markup=keyboard)
