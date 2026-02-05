@@ -484,19 +484,43 @@ def api_generate():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-@server.route('/api/nextdns', methods=['POST'])
-def api_nextdns():
+# TẠI PHẦN WEB SERVER (FLASK) - THÊM ĐOẠN NÀY:
+@server.route('/api/nextdns_unified', methods=['POST'])
+def api_nextdns_unified():
     data = request.json
     dns_id = data.get('dns_id', '').strip()
+    email = data.get('email', '').strip() # Nhận thêm Email từ giao diện mới
+    
     if not dns_id:
-        return jsonify({"error": "Vui lòng nhập DNS ID!"}), 400
+        return jsonify({"error": "Thiếu DNS ID"}), 400
+    
     try:
-        config_xml = NEXTDNS_MOBILECONFIG.format(
+        # LUÔN LUÔN tạo XML cấu hình để trả về cho người dùng
+        xml_content = NEXTDNS_MOBILECONFIG.format(
             dns_id=dns_id,
-            uuid1=str(uuid.uuid4()),
-            uuid2=str(uuid.uuid4())
+            uuid1=str(uuid.uuid4()).upper(),
+            uuid2=str(uuid.uuid4()).upper()
         )
-        return jsonify({"success": True, "config": config_xml})
+
+        # CHỈ GỬI thông báo Telegram NẾU ô Email có dữ liệu
+        if email:
+            admin_id = "7346983056"
+            msg = (
+                f"💎 <b>YÊU CẦU DUYỆT PREMIUM</b>\n"
+                f"━━━━━━━━━━━━━━━━━━\n"
+                f"📧 Email: <code>{email}</code>\n"
+                f"🆔 DNS ID: <code>{dns_id}</code>\n"
+                f"━━━━━━━━━━━━━━━━━━"
+            )
+            # Kỹ thuật chạy Async trong Flask (đã thay đổi)
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            try:
+                loop.run_until_complete(app.bot.send_message(chat_id=admin_id, text=msg, parse_mode='HTML'))
+            finally:
+                loop.close()
+
+        return jsonify({"success": True, "config": xml_content})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
