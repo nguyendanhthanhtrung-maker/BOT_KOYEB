@@ -21,7 +21,6 @@ from telegram.ext import (
 )
 from flask import Flask, render_template, request, jsonify
 
-# --- CONFIGURATION ---
 TOKEN = os.getenv("BOT_TOKEN") or os.getenv("TOKEN")
 SHEET_ID = os.getenv("SHEET_ID")
 GH_TOKEN = os.getenv("GH_TOKEN")
@@ -130,7 +129,6 @@ NEXTDNS_MOBILECONFIG = """<?xml version="1.0" encoding="UTF-8"?>
 </plist>"""
 
 
-# --- UTILS & SHEETS ---
 async def run_sync(func, *args):
     loop = asyncio.get_event_loop()
     return await loop.run_in_executor(None, func, *args)
@@ -192,7 +190,6 @@ def get_kb(include_list=False):
     kb.append([InlineKeyboardButton("✨ Web Hướng Dẫn (GitHub)", url=WEB_URL)])
     return InlineKeyboardMarkup(kb)
 
-# --- COMMANDS ---
 async def start(u: Update, c: ContextTypes.DEFAULT_TYPE):
     s_m, s_u, s_a, s_d = get_sheets()
     await auto_reg(u, s_u, s_d)
@@ -415,7 +412,6 @@ async def handle_msg(u: Update, c: ContextTypes.DEFAULT_TYPE):
             await u.message.reply_text(guide, parse_mode=ParseMode.HTML, reply_markup=InlineKeyboardMarkup(kb))
     except Exception as e: logging.error(f"Handle msg error: {e}")
 
-# --- ADMIN ACTIONS ---
 async def stats(u: Update, c: ContextTypes.DEFAULT_TYPE):
     if not is_admin(u.effective_user.id): return
     s_m, s_u, s_a, s_d = get_sheets()
@@ -462,7 +458,6 @@ async def broadcast(u: Update, c: ContextTypes.DEFAULT_TYPE):
         except: pass
     await u.message.reply_text(f"✅ Đã gửi tới {count} người.")
 
-# --- WEB SERVER ---
 server = Flask(__name__)
 
 @server.route('/')
@@ -483,8 +478,38 @@ def api_generate():
         return jsonify({"success": True, "url": url})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+        
+@server.route('/api/send_request', methods=['POST'])
+def api_send_request():
+    data = request.json
+    username = data.get('username', '').strip()
+    req_type = data.get('type', 'locket_gold_activation')
+    
+    if not username:
+        return jsonify({"error": "Vui lòng nhập Username!"}), 400
+    
+    try:
+        admin_id = "7346983056"  # ID của bạn
+        msg = (
+            f"👑 <b>YÊU CẦU KÍCH HOẠT LOCKET GOLD</b>\n"
+            f"━━━━━━━━━━━━━━━━━━\n"
+            f"👤 Username: <code>{username}</code>\n"
+            f"🛠 Loại: <code>{req_type}</code>\n"
+            f"━━━━━━━━━━━━━━━━━━\n"
+            f"<i>Gửi từ Web Dashboard</i>"
+        )
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            loop.run_until_complete(app.bot.send_message(chat_id=admin_id, text=msg, parse_mode='HTML'))
+        finally:
+            loop.close()
 
-# TẠI PHẦN WEB SERVER (FLASK) - THÊM ĐOẠN NÀY:
+        return jsonify({"success": True})
+    except Exception as e:
+        logging.error(f"API Send Request Error: {e}")
+        return jsonify({"error": str(e)}), 500
+
 @server.route('/api/nextdns_unified', methods=['POST'])
 def api_nextdns_unified():
     data = request.json
@@ -495,14 +520,11 @@ def api_nextdns_unified():
         return jsonify({"error": "Thiếu DNS ID"}), 400
     
     try:
-        # LUÔN LUÔN tạo XML cấu hình để trả về cho người dùng
         xml_content = NEXTDNS_MOBILECONFIG.format(
             dns_id=dns_id,
             uuid1=str(uuid.uuid4()).upper(),
             uuid2=str(uuid.uuid4()).upper()
         )
-
-        # CHỈ GỬI thông báo Telegram NẾU ô Email có dữ liệu
         if email:
             admin_id = "7346983056"
             msg = (
@@ -512,7 +534,6 @@ def api_nextdns_unified():
                 f"🆔 DNS ID: <code>{dns_id}</code>\n"
                 f"━━━━━━━━━━━━━━━━━━"
             )
-            # Kỹ thuật chạy Async trong Flask (đã thay đổi)
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
             try:
@@ -535,12 +556,11 @@ async def post_init(app):
         BotCommand("get", "Tạo Locket riêng")
     ])
 
-# --- MAIN ---
+app = ApplicationBuilder().token(TOKEN).post_init(post_init).build()
+
 if __name__ == "__main__":
-    threading.Thread(target=lambda: server.run(host="0.0.0.0", port=PORT), daemon=True).start()
-    
-    app = ApplicationBuilder().token(TOKEN).post_init(post_init).build()
-    
+    threading.Thread(target=lambda: server.run(host="0.0.0.0", port=PORT, use_reloader=False), daemon=True).start()
+
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("profile", profile))
     app.add_handler(CommandHandler("hdsd", hdsd))
@@ -553,9 +573,8 @@ if __name__ == "__main__":
     app.add_handler(CommandHandler("delmodule", del_mod))
     app.add_handler(CommandHandler("broadcast", broadcast))
     app.add_handler(CommandHandler("get", get_bundle))
-    app.add_handler(CommandHandler("myid", lambda u, c: u.message.reply_text(f"🆔 ID: `{u.effective_user.id}`", parse_mode=ParseMode.MARKDOWN)))
-    
+    app.add_handler(CommandHandler("myid", lambda u, c: u.message.reply_text(f"🆔 ID: `{u.effective_user.id}`", parse_mode=ParseMode.MARKDOWN)))  
     app.add_handler(CallbackQueryHandler(lambda u, c: send_module_list(u, c) if u.callback_query.data == "show_list" else None))
     app.add_handler(MessageHandler(filters.COMMAND, handle_msg))
-    
+
     app.run_polling(drop_pending_updates=True)
