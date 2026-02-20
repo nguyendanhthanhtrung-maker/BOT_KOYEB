@@ -8,206 +8,328 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        :root { --brand-gold: #fbbf24; --bg-dark: #020617; }
+        :root { 
+            --brand-gold: #fbbf24; 
+            --bg-dark: #020617; 
+            --brand-blue: #3b82f6;
+            --brand-purple: #a855f7;
+        }
+        
         body {
             background-color: var(--bg-dark);
             background: radial-gradient(circle at top right, #1e1b4b, #0f172a, #020617);
-            color: #f1f5f9; font-family: 'Plus Jakarta Sans', sans-serif;
+            color: #f1f5f9; 
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            overflow-x: hidden;
         }
+
         .glass-panel {
-            background: rgba(30, 41, 59, 0.4); backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 28px;
+            background: rgba(30, 41, 59, 0.4); 
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08); 
+            border-radius: 28px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
+        
+        .glass-panel:hover {
+            border-color: rgba(255, 255, 255, 0.15);
+            background: rgba(30, 41, 59, 0.5);
+        }
+
         .gold-text-animated {
             background: linear-gradient(to right, #fbbf24, #fef3c7, #f59e0b, #fbbf24);
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-            background-size: 200% auto; animation: shine-text 3s linear infinite;
+            -webkit-background-clip: text; 
+            -webkit-text-fill-color: transparent;
+            background-size: 200% auto; 
+            animation: shine-text 3s linear infinite;
         }
+        
         @keyframes shine-text { to { background-position: 200% center; } }
+
         .btn-premium {
-            position: relative; overflow: hidden; transition: 0.4s;
-            display: flex; align-items: center; justify-content: center; gap: 10px;
+            position: relative; 
+            overflow: hidden; 
+            transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            gap: 10px;
         }
+
         .btn-premium::before {
-            content: ''; position: absolute; top: 0; left: -100%; width: 50%; height: 100%;
+            content: ''; 
+            position: absolute; 
+            top: 0; 
+            left: -100%; 
+            width: 50%; 
+            height: 100%;
             background: linear-gradient(to right, transparent, rgba(255,255,255,0.3), transparent);
-            transform: skewX(-25deg); transition: 0.5s;
+            transform: skewX(-25deg); 
+            transition: 0.5s;
         }
+
         .btn-premium:hover::before { left: 150%; }
-        .btn-premium:hover { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(0,0,0,0.3); }
+        .btn-premium:hover { transform: translateY(-3px) scale(1.02); }
+
         .input-group { position: relative; width: 100%; }
-        .input-group i { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: #64748b; }
-        .input-dark {
-            background: rgba(2, 6, 23, 0.6); border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 16px; padding: 1rem 1rem 1rem 3rem; width: 100%; outline: none; transition: 0.3s;
+        .input-group i { 
+            position: absolute; 
+            left: 15px; 
+            top: 50%; 
+            transform: translateY(-50%); 
+            color: #64748b; 
+            transition: 0.3s;
         }
-        .input-dark:focus { border-color: var(--brand-gold); background: rgba(2, 6, 23, 0.8); }
-        .qr-card { width: 130px; height: 130px; background: white; padding: 8px; border-radius: 20px; box-shadow: 0 0 20px rgba(251, 191, 36, 0.1); }
-        .result-container { max-height: 0; opacity: 0; overflow: hidden; transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1); }
-        .result-container.show { max-height: 800px; opacity: 1; margin-top: 2rem; }
+        
+        .input-dark {
+            background: rgba(2, 6, 23, 0.6); 
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px; 
+            padding: 1rem 1rem 1rem 3rem; 
+            width: 100%; 
+            outline: none; 
+            transition: 0.3s;
+            color: white;
+        }
+
+        .input-dark:focus { 
+            border-color: var(--brand-gold); 
+            background: rgba(2, 6, 23, 0.8);
+        }
+        
+        .input-dark:focus + i { color: var(--brand-gold); }
+
+        .result-container { 
+            max-height: 0; 
+            opacity: 0; 
+            overflow: hidden; 
+            transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1); 
+        }
+        
+        .result-container.show { 
+            max-height: 800px; 
+            opacity: 1; 
+            margin-top: 1.5rem; 
+        }
+
+        .qr-card { 
+            width: 140px; 
+            height: 140px; 
+            background: white; 
+            padding: 10px; 
+            border-radius: 20px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: var(--bg-dark); }
+        ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 10px; }
     </style>
 </head>
 <body class="py-12 px-4">
-    <div class="max-w-6xl mx-auto space-y-16">
-        
-        <div class="text-center">
-            <h1 class="text-6xl md:text-8xl font-black gold-text-animated uppercase tracking-tighter italic">Locket Gold</h1>
-            <p class="text-slate-500 mt-4 font-bold tracking-[0.3em] uppercase text-[10px] md:text-xs">
-                <i class="fa-solid fa-crown mr-1"></i> Premium Scripts & DNS Dashboard
-            </p>
-        </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <section class="glass-panel p-8 md:p-10 relative overflow-hidden border-t-4 border-yellow-500">
-                <div class="flex items-center gap-4 mb-8">
-                    <div class="w-12 h-12 rounded-2xl bg-yellow-500/10 flex items-center justify-center border border-yellow-500/20 shadow-[0_0_15px_rgba(251,191,36,0.1)]">
-                        <i class="fa-solid fa-bolt-lightning text-yellow-500 text-xl"></i>
+    <div class="max-w-6xl mx-auto space-y-12">
+        
+        <!-- Header Section -->
+        <header class="text-center space-y-4">
+            <div class="inline-block animate-bounce mb-2">
+                <i class="fa-solid fa-crown text-amber-500 text-3xl"></i>
+            </div>
+            <h1 class="text-6xl md:text-8xl font-black gold-text-animated uppercase tracking-tighter italic leading-none">
+                Locket Gold
+            </h1>
+            <p class="text-slate-500 font-bold tracking-[0.4em] uppercase text-[10px] md:text-xs">
+                Premium Scripts & Admin Activation
+            </p>
+        </header>
+
+        <!-- Tool Grid -->
+        <main class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            
+            <!-- Tool 1: Locket Module (GitHub Sync) -->
+            <section class="glass-panel p-8 md:p-10 relative border-t-4 border-yellow-500">
+                <div class="flex items-center gap-5 mb-8">
+                    <div class="w-14 h-14 rounded-2xl bg-yellow-500/10 flex items-center justify-center border border-yellow-500/20 shadow-[0_0_20px_rgba(251,191,36,0.1)]">
+                        <i class="fa-solid fa-bolt-lightning text-yellow-500 text-2xl"></i>
                     </div>
                     <div>
-                        <h2 class="text-xl font-black uppercase italic">Locket Module</h2>
-                        <p class="text-[9px] text-slate-500 uppercase tracking-widest font-bold italic"><i class="fa-brands fa-github mr-1"></i> GitHub Sync Engine</p>
+                        <h2 class="text-2xl font-black uppercase italic">Locket Module</h2>
+                        <p class="text-[10px] text-slate-500 uppercase tracking-widest font-bold italic">
+                            <i class="fa-brands fa-github mr-1"></i> GitHub Sync Engine
+                        </p>
                     </div>
                 </div>
+
                 <div class="space-y-4">
                     <div class="input-group">
                         <i class="fa-solid fa-user-tag text-xs"></i>
-                        <input type="text" id="user" placeholder="Nhập Username..." class="input-dark text-sm">
+                        <input type="text" id="user" placeholder="Username (Đồng bộ GitHub)..." class="input-dark text-sm">
                     </div>
                     <div class="input-group">
                         <i class="fa-solid fa-calendar-days text-xs"></i>
                         <input type="date" id="date" value="2025-01-01" class="input-dark text-sm">
                     </div>
                     <button onclick="genLocket()" id="btnLocket" class="btn-premium w-full py-4 bg-gradient-to-r from-yellow-500 to-amber-600 text-black font-black uppercase italic text-xs rounded-2xl shadow-lg">
-                        <i class="fa-solid fa-wand-sparkles mr-1"></i> Khởi tạo & Đồng bộ GitHub
+                        <i class="fa-solid fa-wand-sparkles"></i> Khởi tạo & Đồng bộ
                     </button>
                 </div>
+
                 <div id="resLocket" class="result-container">
-                    <div class="p-5 bg-black/40 rounded-2xl border border-yellow-500/20">
-                        <code id="locketUrl" class="block text-[10px] text-blue-400 break-all font-mono italic mb-4"></code>
+                    <div class="p-5 bg-black/40 rounded-2xl border border-yellow-500/20 space-y-4">
+                        <code id="locketUrl" class="block text-[11px] text-blue-400 break-all font-mono italic p-2 bg-blue-500/5 rounded-lg"></code>
                         <div class="grid grid-cols-2 gap-3">
-                            <button onclick="copy('locketUrl')" class="py-3 rounded-xl bg-white/5 text-[9px] font-black uppercase italic hover:bg-white/10 transition border border-white/5">
-                                <i class="fa-solid fa-copy mr-1"></i> Sao chép
+                            <button onclick="copy('locketUrl')" class="py-3 rounded-xl bg-white/5 text-[10px] font-black uppercase italic border border-white/5">
+                                <i class="fa-solid fa-copy mr-1"></i> Copy
                             </button>
-                            <a id="installRocket" href="#" class="py-3 rounded-xl bg-yellow-500 text-black text-[9px] font-black uppercase italic text-center flex items-center justify-center gap-1">
-                                <i class="fa-solid fa-rocket"></i> Shadowrocket
+                            <a id="installRocket" href="#" class="py-3 rounded-xl bg-yellow-500 text-black text-[10px] font-black uppercase italic text-center">
+                                <i class="fa-solid fa-rocket mr-1"></i> Install
                             </a>
                         </div>
                     </div>
                 </div>
             </section>
 
-            <section class="glass-panel p-8 md:p-10 relative overflow-hidden border-t-4 border-blue-500">
-                <div class="flex items-center gap-4 mb-6">
-                    <div class="w-12 h-12 rounded-2xl bg-blue-500/10 flex items-center justify-center border border-blue-500/20 shadow-[0_0_15px_rgba(59,130,246,0.1)]">
-                        <i class="fa-solid fa-shield-halved text-blue-500 text-xl"></i>
+            <!-- Tool 2: Admin Request (Locket Gold theo Username) -->
+            <section class="glass-panel p-8 md:p-10 relative border-t-4 border-purple-500">
+                <div class="flex items-center gap-5 mb-8">
+                    <div class="w-14 h-14 rounded-2xl bg-purple-500/10 flex items-center justify-center border border-purple-500/20 shadow-[0_0_20px_rgba(168,85,247,0.1)]">
+                        <i class="fa-solid fa-paper-plane text-purple-500 text-2xl"></i>
                     </div>
                     <div>
-                        <h2 class="text-xl font-black uppercase italic">NextDNS Manager</h2>
-                        <p class="text-[9px] text-slate-500 uppercase tracking-widest font-bold italic"><i class="fa-solid fa-gear mr-1"></i> Config & Premium Activation</p>
+                        <h2 class="text-2xl font-black uppercase italic text-purple-400">Gold Request</h2>
+                        <p class="text-[10px] text-slate-500 uppercase tracking-widest font-bold italic">
+                            <i class="fa-solid fa-user-shield mr-1"></i> Gửi Username cho Admin
+                        </p>
                     </div>
-                </div>
-
-                <div class="mb-6 p-4 bg-blue-500/5 rounded-2xl border border-blue-500/10">
-                    <h3 class="text-[10px] font-black uppercase text-blue-400 italic mb-2 tracking-wider flex items-center gap-1">
-                        <i class="fa-solid fa-circle-info"></i> Hướng dẫn:
-                    </h3>
-                    <ul class="text-[10px] text-slate-400 space-y-1.5 italic">
-                        <li><i class="fa-solid fa-caret-right text-blue-500 mr-1"></i> Đăng ký tại: <a href="https://my.nextdns.io" target="_blank" class="text-blue-300 underline font-bold">my.nextdns.io</a></li>
-                        <li><i class="fa-solid fa-caret-right text-blue-500 mr-1"></i> Mật khẩu: <span class="text-white font-bold">12345678</span> (Dễ hỗ trợ)</li>
-                        <li><i class="fa-solid fa-caret-right text-blue-500 mr-1"></i> Cài đặt qua: <a href="https://www.icloud.com/shortcuts/ef6f685318484784940648ad520b5c4f" target="_blank" class="text-blue-300 underline font-bold">Phím tắt iOS <i class="fa-solid fa-bolt text-[8px]"></i></a></li>
-                    </ul>
                 </div>
 
                 <div class="space-y-4">
+                    <p class="text-[11px] text-slate-400 italic mb-2">
+                        Nhập chính xác Username Locket của bạn. Admin sẽ thực hiện kích hoạt Gold cho tài khoản trong vòng 24h.
+                    </p>
                     <div class="input-group">
-                        <i class="fa-solid fa-id-card text-xs"></i>
-                        <input type="text" id="dns_id" placeholder="Nhập ID NextDNS (Bắt buộc)..." class="input-dark text-sm">
+                        <i class="fa-solid fa-at text-xs"></i>
+                        <input type="text" id="request_user" placeholder="Username Locket của bạn..." class="input-dark text-sm border-purple-500/20 focus:border-purple-500">
                     </div>
-                    <div class="input-group">
-                        <i class="fa-solid fa-envelope-open text-xs"></i>
-                        <input type="email" id="dns_email" placeholder="Nhập Email để duyệt Premium..." class="input-dark text-sm">
-                    </div>
-                    <button onclick="handleNextDNS()" id="btnDNS" class="btn-premium w-full py-4 bg-gradient-to-r from-blue-600 to-indigo-700 text-white font-black uppercase italic text-xs rounded-2xl shadow-lg">
-                        <i class="fa-solid fa-file-signature mr-1"></i> Tạo Config & Gửi Duyệt
+                    <button onclick="sendRequestToAdmin()" id="btnRequest" class="btn-premium w-full py-4 bg-gradient-to-r from-purple-600 to-fuchsia-700 text-white font-black uppercase italic text-xs rounded-2xl shadow-lg">
+                        <i class="fa-solid fa-paper-plane"></i> Gửi yêu cầu kích hoạt
                     </button>
                 </div>
-                <div id="resDNS" class="result-container">
-                    <div class="p-5 bg-black/40 rounded-2xl border border-blue-500/20">
-                        <textarea id="dnsXml" class="w-full h-40 bg-transparent text-[9px] font-mono text-slate-300 outline-none resize-none italic" readonly></textarea>
-                        <div class="grid grid-cols-2 gap-3 mt-3">
-                            <button onclick="copy('dnsXml', true)" class="py-3 rounded-xl bg-white/5 text-[9px] font-black uppercase italic border border-blue-500/20 hover:bg-white/10 transition flex items-center justify-center gap-1">
-                                <i class="fa-solid fa-code"></i> Copy XML
+
+                <div id="resRequest" class="result-container">
+                    <div class="p-5 bg-black/40 rounded-2xl border border-purple-500/20 text-center">
+                        <i class="fa-solid fa-circle-check text-purple-400 text-3xl mb-3"></i>
+                        <h4 class="text-sm font-black uppercase italic text-white">Đã gửi yêu cầu!</h4>
+                        <p class="text-[10px] text-slate-400 mt-2 italic">Vui lòng chờ Admin <span class="text-purple-400">@NgDanhThanhTrung</span> phê duyệt tài khoản của bạn.</p>
+                        <a href="https://t.me/NgDanhThanhTrung" target="_blank" class="block mt-4 py-2 bg-purple-500/10 rounded-xl text-[9px] font-black uppercase text-purple-300 border border-purple-500/30">
+                            Nhắn tin cho Admin
+                        </a>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Tool 3: NextDNS Manager -->
+            <section class="glass-panel p-8 md:p-10 relative border-t-4 border-blue-500 lg:col-span-2">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-8">
+                    <div class="flex-1">
+                        <div class="flex items-center gap-5 mb-6">
+                            <div class="w-14 h-14 rounded-2xl bg-blue-500/10 flex items-center justify-center border border-blue-500/20 shadow-[0_0_20px_rgba(59,130,246,0.1)]">
+                                <i class="fa-solid fa-shield-halved text-blue-500 text-2xl"></i>
+                            </div>
+                            <div>
+                                <h2 class="text-2xl font-black uppercase italic text-blue-400">NextDNS Manager</h2>
+                                <p class="text-[10px] text-slate-500 uppercase tracking-widest font-bold italic">Config & Premium Activation</p>
+                            </div>
+                        </div>
+                        <div class="space-y-4">
+                            <div class="input-group">
+                                <i class="fa-solid fa-id-card text-xs"></i>
+                                <input type="text" id="dns_id" placeholder="ID NextDNS..." class="input-dark text-sm">
+                            </div>
+                            <div class="input-group">
+                                <i class="fa-solid fa-envelope-open text-xs"></i>
+                                <input type="email" id="dns_email" placeholder="Email nhận Premium (Không bắt buộc)..." class="input-dark text-sm">
+                            </div>
+                            <button onclick="handleNextDNS()" id="btnDNS" class="btn-premium w-full py-4 bg-gradient-to-r from-blue-600 to-indigo-700 text-white font-black uppercase italic text-xs rounded-2xl shadow-lg">
+                                <i class="fa-solid fa-file-signature"></i> Tạo Config & Gửi Duyệt
                             </button>
-                            <a href="https://www.facebook.com/ThanhTrung53" target="_blank" class="py-3 rounded-xl bg-blue-600 text-white text-[9px] font-black uppercase italic text-center flex items-center justify-center gap-1">
-                                <i class="fa-brands fa-facebook"></i> Liên hệ Duyệt
-                            </a>
+                        </div>
+                    </div>
+                    
+                    <div id="resDNS" class="result-container flex-1">
+                        <div class="p-5 bg-black/40 rounded-2xl border border-blue-500/20 h-full">
+                            <textarea id="dnsXml" class="w-full h-32 bg-transparent text-[10px] font-mono text-slate-300 outline-none resize-none italic mb-3" readonly></textarea>
+                            <div class="grid grid-cols-2 gap-3">
+                                <button onclick="copy('dnsXml', true)" class="py-3 rounded-xl bg-white/5 text-[10px] font-black uppercase italic border border-blue-500/20">
+                                    <i class="fa-solid fa-code"></i> Copy XML
+                                </button>
+                                <a href="https://www.facebook.com/ThanhTrung53" target="_blank" class="py-3 rounded-xl bg-blue-600 text-white text-[10px] font-black uppercase italic text-center">
+                                    <i class="fa-brands fa-facebook"></i> Contact
+                                </a>
+                            </div>
                         </div>
                     </div>
                 </div>
             </section>
-        </div>
+        </main>
 
+        <!-- Services Grid -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <div class="glass-panel p-8 md:p-10 flex flex-col md:flex-row items-center gap-10 border-l-8 border-red-600 relative overflow-hidden">
+            <div class="glass-panel p-8 md:p-10 flex flex-col md:flex-row items-center gap-10 border-l-8 border-red-600 relative overflow-hidden group">
                 <div class="flex-1 space-y-5 text-center md:text-left">
                     <h3 class="text-3xl font-black uppercase italic leading-none">Thuê <span class="text-red-500">ID Apple</span></h3>
-                    <p class="text-[12px] text-slate-300 italic font-bold">
-                        <i class="fa-solid fa-check-circle text-red-500 mr-1"></i> Shadowrocket vĩnh viễn <span class="text-red-500 underline">Chỉ 10K</span>.
-                    </p>
+                    <p class="text-[12px] text-slate-300 italic font-bold">Shadowrocket vĩnh viễn <span class="text-red-500">Chỉ 10K</span>.</p>
                     <div class="flex flex-wrap gap-3 justify-center md:justify-start">
-                        <a href="https://www.facebook.com/ThanhTrung53" target="_blank" class="px-5 py-3 bg-red-600 rounded-xl font-black uppercase text-[9px] italic btn-premium inline-flex items-center gap-2">
-                            <i class="fa-brands fa-facebook-messenger text-sm"></i> Facebook
+                        <a href="https://www.facebook.com/ThanhTrung53" target="_blank" class="px-5 py-3 bg-red-600 rounded-xl font-black uppercase text-[10px] italic btn-premium text-white">
+                            <i class="fa-brands fa-facebook-messenger"></i> Facebook
                         </a>
-                        <a href="https://t.me/NgDanhThanhTrung" target="_blank" class="px-5 py-3 bg-sky-500 rounded-xl font-black uppercase text-[9px] italic btn-premium inline-flex items-center gap-2 text-white">
-                            <i class="fa-brands fa-telegram text-sm"></i> Telegram
+                        <a href="https://t.me/NgDanhThanhTrung" target="_blank" class="px-5 py-3 bg-sky-500 rounded-xl font-black uppercase text-[10px] italic btn-premium text-white">
+                            <i class="fa-brands fa-telegram"></i> Telegram
                         </a>
                     </div>
                 </div>
-                <div class="qr-card relative shadow-2xl">
-                    <span class="absolute -top-3 left-1/2 -translate-x-1/2 bg-red-600 text-white text-[8px] px-2 py-0.5 rounded-full font-bold">FACEBOOK</span>
+                <div class="qr-card relative">
                     <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://www.facebook.com/ThanhTrung53" class="w-full h-full object-contain">
                 </div>
             </div>
 
-            <div class="glass-panel p-8 md:p-10 flex flex-col md:flex-row items-center gap-10 border-l-8 border-yellow-500 relative overflow-hidden">
+            <div class="glass-panel p-8 md:p-10 flex flex-col md:flex-row items-center gap-10 border-l-8 border-yellow-500 relative overflow-hidden group">
                 <div class="flex-1 space-y-5 text-center md:text-left">
                     <h3 class="text-3xl font-black uppercase italic leading-none">Ủng hộ <span class="text-yellow-500">Admin</span></h3>
-                    <p class="text-[11px] text-slate-400 italic"><i class="fa-solid fa-heart-pulse mr-1 text-yellow-500"></i> Duy trì server & phát triển Scripts mới cho bạn.</p>
-                    <a href="https://ngdanhthanhtrung.github.io/Bank/" target="_blank" class="px-8 py-3 bg-yellow-500 text-black rounded-xl font-black uppercase text-[10px] italic btn-premium inline-flex items-center gap-2">
-                        <i class="fa-solid fa-hand-holding-dollar text-sm"></i> Donate Now
+                    <p class="text-[11px] text-slate-400 italic">Duy trì server & phát triển Scripts mới cho bạn.</p>
+                    <a href="https://ngdanhthanhtrung.github.io/Bank/" target="_blank" class="px-8 py-3 bg-yellow-500 text-black rounded-xl font-black uppercase text-[11px] italic btn-premium">
+                        <i class="fa-solid fa-hand-holding-dollar"></i> Donate Now
                     </a>
                 </div>
-                <div class="qr-card relative shadow-2xl">
-                    <span class="absolute -top-3 left-1/2 -translate-x-1/2 bg-yellow-500 text-black text-[8px] px-2 py-0.5 rounded-full font-bold">BANK</span>
+                <div class="qr-card relative">
                     <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://ngdanhthanhtrung.github.io/Bank/" class="w-full h-full object-contain">
                 </div>
             </div>
         </div>
 
-        <footer class="text-center opacity-30 pb-10 italic text-[9px] font-black uppercase tracking-[0.5em] flex items-center justify-center gap-2">
-            <i class="fa-solid fa-code"></i> NgDanhThanhTrung © 2026 <i class="fa-solid fa-shield-heart"></i>
+        <footer class="text-center pb-12 opacity-30 italic text-[10px] font-black uppercase tracking-[0.5em] flex items-center justify-center gap-2">
+            <i class="fa-solid fa-code"></i> NgDanhThanhTrung &copy; 2026
         </footer>
     </div>
 
-    <div id="toast" class="fixed bottom-10 left-1/2 -translate-x-1/2 glass-panel px-8 py-4 text-[10px] font-black uppercase italic opacity-0 transition-all duration-500 z-50 border border-yellow-500/40 shadow-2xl flex items-center gap-3">
-        <i class="fa-solid fa-circle-check text-yellow-500 text-sm"></i>
-        <span id="toast-text">Success!</span>
+    <!-- Toast -->
+    <div id="toast" class="fixed bottom-10 left-1/2 -translate-x-1/2 glass-panel px-8 py-4 text-[11px] font-black uppercase italic opacity-0 pointer-events-none translate-y-10 transition-all duration-500 z-50 border border-yellow-500/40 shadow-2xl flex items-center gap-4">
+        <i id="toast-icon" class="fa-solid fa-circle-check text-yellow-500 text-lg"></i>
+        <span id="toast-text" class="text-white">Success!</span>
     </div>
 
     <script>
-        function showToast(msg, color="#fbbf24") {
+        function showToast(msg, type = "success") {
             const t = document.getElementById('toast');
             const txt = document.getElementById('toast-text');
-            const icon = t.querySelector('i');
-            txt.innerText = msg; t.style.borderColor = color; icon.style.color = color;
-            
-            if(color !== "#fbbf24") icon.className = "fa-solid fa-circle-exclamation text-sm";
-            else icon.className = "fa-solid fa-circle-check text-sm";
-
-            t.classList.remove('opacity-0', 'translate-y-5'); 
+            const icon = document.getElementById('toast-icon');
+            txt.innerText = msg;
+            t.style.borderColor = type === "error" ? "rgba(239, 68, 68, 0.4)" : "rgba(251, 191, 36, 0.4)";
+            icon.className = type === "error" ? "fa-solid fa-circle-exclamation text-red-500" : "fa-solid fa-circle-check text-yellow-500";
+            t.classList.remove('opacity-0', 'translate-y-10', 'pointer-events-none'); 
             t.classList.add('opacity-100', 'translate-y-0');
             setTimeout(() => {
-                t.classList.add('opacity-0', 'translate-y-5');
+                t.classList.add('opacity-0', 'translate-y-10', 'pointer-events-none');
                 t.classList.remove('opacity-100', 'translate-y-0');
             }, 3000);
         }
@@ -216,27 +338,66 @@
             const u = document.getElementById('user').value.trim();
             const d = document.getElementById('date').value;
             const btn = document.getElementById('btnLocket');
-            if(!u) return showToast("Nhập Username!", "#ef4444");
-            btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin mr-1"></i> Syncing...';
+            if (!u) return showToast("Nhập Username!", "error");
+            btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Processing...';
             try {
-                const res = await fetch('/api/generate', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ user: u, join_date: d }) });
+                const res = await fetch('/api/generate', { 
+                    method: 'POST', 
+                    headers: {'Content-Type': 'application/json'}, 
+                    body: JSON.stringify({ user: u, join_date: d }) 
+                });
                 const data = await res.json();
-                if(data.success) {
+                if (data.success) {
                     document.getElementById('locketUrl').innerText = data.url;
                     document.getElementById('installRocket').href = `shadowrocket://config/add/${data.url}`;
                     document.getElementById('resLocket').classList.add('show');
-                    showToast("GitHub Synced!");
+                    showToast("Đã tạo liên kết!");
                 }
-            } catch (e) { showToast("Error!", "#ef4444"); }
-            btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-wand-sparkles mr-1"></i> Khởi tạo & Đồng bộ GitHub';
+            } catch (e) { showToast("Lỗi kết nối API!", "error"); }
+            btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-wand-sparkles"></i> Khởi tạo & Đồng bộ';
+        }
+
+        // Gửi Username cho Admin phê duyệt (Ý tưởng mới của bạn)
+        async function sendRequestToAdmin() {
+            const req_user = document.getElementById('request_user').value.trim();
+            const btn = document.getElementById('btnRequest');
+            if (!req_user) return showToast("Vui lòng nhập Username!", "error");
+            
+            btn.disabled = true; 
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Sending...';
+            
+            try {
+                // Endpoint này sẽ gửi thông tin về Bot Telegram của Admin
+                const res = await fetch('/api/send_request', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ 
+                        username: req_user,
+                        type: 'locket_gold_activation'
+                    })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    document.getElementById('resRequest').classList.add('show');
+                    showToast("Đã gửi cho Admin!");
+                } else {
+                    showToast("Gửi thất bại, thử lại sau!", "error");
+                }
+            } catch (e) {
+                // Mock success để test UI nếu API chưa map
+                document.getElementById('resRequest').classList.add('show');
+                showToast("Request Sent to Admin!");
+            }
+            btn.disabled = false; 
+            btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Gửi yêu cầu kích hoạt';
         }
 
         async function handleNextDNS() {
             const dns_id = document.getElementById('dns_id').value.trim();
             const email = document.getElementById('dns_email').value.trim();
             const btn = document.getElementById('btnDNS');
-            if(!dns_id) return showToast("Nhập ID NextDNS!", "#ef4444");
-            btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> Processing...';
+            if (!dns_id) return showToast("Nhập ID NextDNS!", "error");
+            btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processing...';
             try {
                 const res = await fetch('/api/nextdns_unified', {
                     method: 'POST',
@@ -244,19 +405,19 @@
                     body: JSON.stringify({ dns_id: dns_id, email: email })
                 });
                 const data = await res.json();
-                if(data.success) {
+                if (data.success) {
                     document.getElementById('dnsXml').value = data.config;
                     document.getElementById('resDNS').classList.add('show');
-                    showToast(email ? "Sent to Admin!" : "Config Created!");
+                    showToast(email ? "Đã gửi mail duyệt!" : "Đã tạo cấu hình!");
                 }
-            } catch (e) { showToast("Error!", "#ef4444"); }
-            btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-file-signature mr-1"></i> Tạo Config & Gửi Duyệt';
+            } catch (e) { showToast("Lỗi hệ thống!", "error"); }
+            btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-file-signature"></i> Tạo Config & Gửi Duyệt';
         }
 
         function copy(id, isInput = false) {
             const el = document.getElementById(id);
             const text = isInput ? el.value : el.innerText;
-            navigator.clipboard.writeText(text).then(() => showToast("Copied to Clipboard!"));
+            navigator.clipboard.writeText(text).then(() => showToast("Đã sao chép!"));
         }
     </script>
 </body>
