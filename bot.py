@@ -240,18 +240,25 @@ async def profile(u: Update, c: ContextTypes.DEFAULT_TYPE):
     s_m, s_u, s_a, s_d = get_sheets()
     uid = str(u.effective_user.id)
     ids = s_d.col_values(1)
+    
     if uid not in ids: 
-        return await u.message.reply_text("❌ Chưa có dữ liệu. Hãy gõ /start.")
+        return await u.message.reply_text("❌ <b>Dữ liệu chưa đồng bộ.</b> Hãy gõ /start để khởi tạo.")
+    
     row = ids.index(uid) + 1
     msg_count = s_d.cell(row, 3).value or "0"
+    
     text = (
-        f"👤 <b>HỒ SƠ CỦA BẠN</b>\n\n"
-        f"🆔 ID: <code>{uid}</code>\n"
-        f"👤 User: @{u.effective_user.username}\n"
-        f"💬 Tin nhắn đã gửi: <b>{msg_count}</b>"
+        f"👤 <b>HỒ SƠ NGƯỜI DÙNG</b>\n"
+        f"━━━━━━━━━━━━━━━━━━━━\n"
+        f"🆔 <b>ID:</b> <code>{uid}</code>\n"
+        f"🏷 <b>Username:</b> @{u.effective_user.username if u.effective_user.username else 'N/A'}\n"
+        f"📛 <b>Tên:</b> {u.effective_user.full_name}\n"
+        f"💬 <b>Tương tác:</b> <code>{msg_count}</code> tin nhắn\n"
+        f"━━━━━━━━━━━━━━━━━━━━\n"
+        f"✨ <i>Cảm ơn bạn đã sử dụng dịch vụ!</i>"
     )
     await u.message.reply_text(text, parse_mode=ParseMode.HTML)
-
+    
 async def sync_github_files(user, date):
     repo = Github(GH_TOKEN).get_repo(REPO_NAME)
     js_p, mod_p = f"{user}/Locket_Gold.js", f"{user}/Locket_{user}.sgmodule"
@@ -377,14 +384,66 @@ async def approve_user(u: Update, c: ContextTypes.DEFAULT_TYPE):
 
 async def send_module_list(u: Update, c: ContextTypes.DEFAULT_TYPE):
     s_m, s_u, s_a, s_d = get_sheets()
-    m_list = "<b>📂 DANH SÁCH MODULE HỆ THỐNG:</b>\n\n" + "\n".join([f"🔹 /{r['key']} - {r['title']}" for r in s_m.get_all_records()])
     target = u.message if u.message else u.callback_query.message
-    await target.reply_text(m_list, parse_mode=ParseMode.HTML)
+    
+    modules = s_m.get_all_records()
+    if not modules:
+        return await target.reply_text("📭 <b>Danh sách Module hiện đang trống.</b>", parse_mode=ParseMode.HTML)
+
+    m_list = "📂 <b>DANH SÁCH MODULE HỆ THỐNG</b>\n"
+    m_list += "<i>Nhấn vào lệnh để lấy hướng dẫn cài đặt</i>\n"
+    m_list += "━━━━━━━━━━━━━━━━━━━━\n"
+    for r in modules:
+        m_list += f"🔹 /{r['key']} ➔ <b>{r['title']}</b>\n"
+    m_list += "━━━━━━━━━━━━━━━━━━━━\n"
+    m_list += "👉 <i>Sử dụng các lệnh trên để lấy link chi tiết.</i>"
+
+    await target.reply_text(m_list, parse_mode=ParseMode.HTML, reply_markup=get_kb())
     
     if is_admin(u.effective_user.id) and u.message:
-        u_list = "<b>👥 DANH SÁCH USER:</b>\n\n" + "\n".join([f"👤 {r['name']} ({r.get('username','N/A')})" for r in s_u.get_all_records()])
+        users = s_u.get_all_records()
+        u_list = "👥 <b>QUẢN LÝ NGƯỜI DÙNG (ADMIN ONLY)</b>\n"
+        u_list += "━━━━━━━━━━━━━━━━━━━━\n"
+        for r in users[:20]: # Hiển thị 20 người gần nhất
+            u_list += f"👤 <code>{r['id']}</code> - {r['name']}\n"
+        u_list += "━━━━━━━━━━━━━━━━━━━━\n"
+        u_list += f"<i>Tổng cộng: {len(users)} thành viên.</i>"
         await u.message.reply_text(u_list, parse_mode=ParseMode.HTML)
+        
+async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    data = query.data
+    user_id = update.effective_user.id
+    await query.answer()
 
+    if not is_admin(user_id):
+        return await query.message.reply_text("❌ Bạn không có quyền!")
+
+    admin_name = update.effective_user.full_name
+
+    if data.startswith("approve_locket:"):
+        username = data.split(":")[1]
+        await query.edit_message_text(
+            text=f"✅ <b>HOÀN TẤT DUYỆT LOCKET</b>\n━━━━━━━━━━━━━━━━━━━━\n👤 User: <code>{username}</code>\n👨‍💻 Admin: <b>{admin_name}</b>\n✨ <i>Hệ thống đã kích hoạt thành công!</i>",
+            parse_mode=ParseMode.HTML
+        )
+
+    elif data.startswith("approve_dns:"):
+        parts = data.split(":")
+        dns_id, email = parts[1], parts[2] if len(parts) > 2 else "N/A"
+        await query.edit_message_text(
+            text=f"✅ <b>HOÀN TẤT DUYỆT NEXTDNS</b>\n━━━━━━━━━━━━━━━━━━━━\n📧 Email: <code>{email}</code>\n🆔 ID: <code>{dns_id}</code>\n👨‍💻 Admin: <b>{admin_name}</b>",
+            parse_mode=ParseMode.HTML
+        )
+
+    elif data.startswith("deny_"):
+        await query.edit_message_text(
+            text=f"❌ <b>YÊU CẦU ĐÃ BỊ TỪ CHỐI</b>\n━━━━━━━━━━━━━━━━━━━━\n👨‍💻 Admin thực hiện: {admin_name}\n⚠️ <i>Yêu cầu này sẽ không được xử lý.</i>",
+            parse_mode=ParseMode.HTML
+        )
+
+    elif data == "show_list":
+        await send_module_list(update, context)
 async def handle_msg(u: Update, c: ContextTypes.DEFAULT_TYPE):
     if not u.message or not u.message.text or not u.message.text.startswith('/'): return
     cmd = u.message.text.replace("/", "").lower().split('@')[0].strip()
@@ -414,15 +473,22 @@ async def handle_msg(u: Update, c: ContextTypes.DEFAULT_TYPE):
 
 async def stats(u: Update, c: ContextTypes.DEFAULT_TYPE):
     if not is_admin(u.effective_user.id): return
+    
     s_m, s_u, s_a, s_d = get_sheets()
-    await u.message.reply_text(
-        f"📊 <b>STATS</b>\n"
-        f"Users: {len(s_u.col_values(1))-1}\n"
-        f"Modules: {len(s_m.get_all_records())}\n"
-        f"Admin: {len(s_a.col_values(1))-1}", 
-        parse_mode=ParseMode.HTML
+    count_m = len(s_m.get_all_records())
+    count_u = len(s_u.col_values(1)) - 1
+    count_a = len(s_a.col_values(1)) - 1
+    
+    msg = (
+        f"📊 <b>THỐNG KÊ HỆ THỐNG</b>\n"
+        f"━━━━━━━━━━━━━━━━━━━━\n"
+        f"🌐 <b>Người dùng:</b> <code>{count_u}</code>\n"
+        f"📦 <b>Số lượng Module:</b> <code>{count_m}</code>\n"
+        f"🛡 <b>Quản trị viên:</b> <code>{count_a}</code>\n"
+        f"━━━━━━━━━━━━━━━━━━━━\n"
+        f"⏱ <i>Cập nhật: {datetime.now().strftime('%H:%M:%S %d/%m/%Y')}</i>"
     )
-
+    await u.message.reply_text(msg, parse_mode=ParseMode.HTML)
 async def set_link(u: Update, c: ContextTypes.DEFAULT_TYPE):
     if not is_admin(u.effective_user.id): return
     try:
@@ -469,15 +535,49 @@ def api_generate():
     data = request.json
     user_web = data.get('user', '').strip()
     date_web = data.get('join_date')
+
     if not user_web or not date_web:
         return jsonify({"error": "Vui lòng nhập đủ thông tin!"}), 400
+    
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     try:
         url = loop.run_until_complete(sync_github_files(user_web, date_web))
+        
+        keyboard = InlineKeyboardMarkup([
+            [
+                InlineKeyboardButton("✅ Duyệt Gold", callback_data=f"approve_locket:{user_web}"),
+                InlineKeyboardButton("❌ Từ chối", callback_data=f"deny_locket:{user_web}")
+            ]
+        ])
+
+        if app:
+            admin_id = "7346983056"
+            msg = (
+                f"👑 <b>YÊU CẦU KÍCH HOẠT LOCKET GOLD</b>\n"
+                f"<i>Hệ thống ghi nhận yêu cầu mới</i>\n"
+                f"━━━━━━━━━━━━━━━━━━━━\n"
+                f"👤 <b>Khách hàng:</b> <code>{user_web}</code>\n"
+                f"📅 <b>Ngày tạo:</b> <code>{date_web}</code>\n"
+                f"⚙️ <b>Trạng thái:</b> <code>Đang chờ...</code>\n"
+                f"━━━━━━━━━━━━━━━━━━━━\n"
+                f"📂 <b>Cấu hình GitHub:</b>\n"
+                f"<a href='{url}'>🌐 Xem mã nguồn tại đây</a>\n\n"
+                f"👉 <i>Nhấn nút dưới để xử lý nhanh.</i>"
+            )
+            loop.run_until_complete(app.bot.send_message(
+                chat_id=admin_id, 
+                text=msg, 
+                parse_mode='HTML', 
+                reply_markup=keyboard,
+                disable_web_page_preview=True
+            ))
+
         return jsonify({"success": True, "url": url})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+    finally:
+        loop.close()
         
 @server.route('/api/send_request', methods=['POST'])
 def api_send_request():
@@ -510,41 +610,49 @@ def api_send_request():
         logging.error(f"API Send Request Error: {e}")
         return jsonify({"error": str(e)}), 500
 
+
 @server.route('/api/nextdns_unified', methods=['POST'])
 def api_nextdns_unified():
     data = request.json
     dns_id = data.get('dns_id', '').strip()
-    email = data.get('email', '').strip() # Nhận thêm Email từ giao diện mới
+    email = data.get('email', '').strip()
     
-    if not dns_id:
-        return jsonify({"error": "Thiếu DNS ID"}), 400
+    if not dns_id: return jsonify({"error": "Thiếu DNS ID"}), 400
     
     try:
         xml_content = NEXTDNS_MOBILECONFIG.format(
-            dns_id=dns_id,
-            uuid1=str(uuid.uuid4()).upper(),
-            uuid2=str(uuid.uuid4()).upper()
+            dns_id=dns_id, uuid1=str(uuid.uuid4()).upper(), uuid2=str(uuid.uuid4()).upper()
         )
-        if email:
+
+        if email and app:
+            keyboard = InlineKeyboardMarkup([
+                [
+                    InlineKeyboardButton("✅ Duyệt Premium", callback_data=f"approve_dns:{dns_id}:{email}"),
+                    InlineKeyboardButton("❌ Từ chối", callback_data=f"deny_dns:{dns_id}")
+                ]
+            ])
             admin_id = "7346983056"
             msg = (
-                f"💎 <b>YÊU CẦU DUYỆT PREMIUM</b>\n"
-                f"━━━━━━━━━━━━━━━━━━\n"
-                f"📧 Email: <code>{email}</code>\n"
-                f"🆔 DNS ID: <code>{dns_id}</code>\n"
-                f"━━━━━━━━━━━━━━━━━━"
+                f"💎 <b>YÊU CẦU NEXTDNS PREMIUM</b>\n"
+                f"━━━━━━━━━━━━━━━━━━━━\n"
+                f"📧 <b>Email:</b> <code>{email}</code>\n"
+                f"🆔 <b>DNS ID:</b> <code>{dns_id}</code>\n"
+                f"🎯 <b>Phân loại:</b> <code>Premium Account</code>\n"
+                f"━━━━━━━━━━━━━━━━━━━━\n"
+                f"<i>Vui lòng nâng cấp tài khoản trước khi duyệt!</i>"
             )
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
             try:
-                loop.run_until_complete(app.bot.send_message(chat_id=admin_id, text=msg, parse_mode='HTML'))
-            finally:
-                loop.close()
+                loop.run_until_complete(app.bot.send_message(
+                    chat_id=admin_id, text=msg, parse_mode='HTML', reply_markup=keyboard
+                ))
+            finally: loop.close()
 
         return jsonify({"success": True, "config": xml_content})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
+        
 async def post_init(app):
     await app.bot.set_my_commands([
         BotCommand("start","Bắt đầu"), 
@@ -556,11 +664,14 @@ async def post_init(app):
         BotCommand("get", "Tạo Locket riêng")
     ])
 
-app = ApplicationBuilder().token(TOKEN).post_init(post_init).build()
-
 if __name__ == "__main__":
-    threading.Thread(target=lambda: server.run(host="0.0.0.0", port=PORT, use_reloader=False), daemon=True).start()
-
+    threading.Thread(
+        target=lambda: server.run(host="0.0.0.0", port=PORT, use_reloader=False), 
+        daemon=True
+    ).start()
+    
+    app = ApplicationBuilder().token(TOKEN).post_init(post_init).build()
+    
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("profile", profile))
     app.add_handler(CommandHandler("hdsd", hdsd))
@@ -574,7 +685,9 @@ if __name__ == "__main__":
     app.add_handler(CommandHandler("broadcast", broadcast))
     app.add_handler(CommandHandler("get", get_bundle))
     app.add_handler(CommandHandler("myid", lambda u, c: u.message.reply_text(f"🆔 ID: `{u.effective_user.id}`", parse_mode=ParseMode.MARKDOWN)))  
-    app.add_handler(CallbackQueryHandler(lambda u, c: send_module_list(u, c) if u.callback_query.data == "show_list" else None))
+
+    app.add_handler(CallbackQueryHandler(handle_callback))
     app.add_handler(MessageHandler(filters.COMMAND, handle_msg))
 
+    print("--- SERVER STARTED ---")
     app.run_polling(drop_pending_updates=True)
