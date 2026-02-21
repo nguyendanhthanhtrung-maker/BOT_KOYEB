@@ -21,6 +21,8 @@ from telegram.ext import (
 )
 from flask import Flask, render_template, request, jsonify
 
+app = None 
+ADMIN_ID = int(os.getenv("ADMIN_ID", "7346983056"))  
 TOKEN = os.getenv("BOT_TOKEN") or os.getenv("TOKEN")
 SHEET_ID = os.getenv("SHEET_ID")
 GH_TOKEN = os.getenv("GH_TOKEN")
@@ -158,9 +160,8 @@ def is_admin(user_id: int) -> bool:
 def ensure_data_header(sheet):
     try:
         if sheet.row_values(1) != ["user_id", "username", "messages"]:
-            sheet.update("A1:C1", [["user_id", "username", "messages"]])
+            sheet.update([["user_id", "username", "messages"]], "A1:C1")
     except: pass
-
 async def auto_reg(u: Update, s_u, s_d):
     user = u.effective_user
     if not user: return
@@ -348,7 +349,7 @@ async def send_email_to_admin(u: Update, c: ContextTypes.DEFAULT_TYPE):
         return await u.message.reply_text("⚠️ Cú pháp: <code>/send your_email@gmail.com</code>", parse_mode=ParseMode.HTML)
     
     email = c.args[0]
-    admin_id = "7346983056"
+    admin_id = ADMIN_ID 
     user = u.effective_user
     
     await c.bot.send_message(
@@ -365,11 +366,15 @@ async def send_email_to_admin(u: Update, c: ContextTypes.DEFAULT_TYPE):
     await u.message.reply_text("✅ Đã gửi Email cho Admin. Vui lòng đợi Admin phê duyệt.")
 
 async def approve_user(u: Update, c: ContextTypes.DEFAULT_TYPE):
-    if str(u.effective_user.id) != "7346983056": return
-    if not c.args: return await u.message.reply_text("⚠️ Cú pháp: /approve [user_id]")
+    if u.effective_user.id != ADMIN_ID: 
+        return
+        
+    if not c.args: 
+        return await u.message.reply_text("⚠️ Cú pháp: /approve [user_id]")
     
     target_id = c.args[0].strip()
     shortcut_url = "https://www.icloud.com/shortcuts/ef6f685318484784940648ad520b5c4f"
+    
     try:
         msg = (
             "✅ <b>YÊU CẦU ĐÃ ĐƯỢC DUYỆT</b>\n\n"
@@ -414,10 +419,13 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     data = query.data
     user_id = update.effective_user.id
+    
+    # Phản hồi ngay lập tức để icon đồng hồ cát trên nút bấm biến mất
     await query.answer()
 
-    if not is_admin(user_id):
-        return await query.message.reply_text("❌ Bạn không có quyền!")
+    # SỬA TẠI ĐÂY: Kiểm tra quyền bằng biến ADMIN_ID (số) thay vì gọi hàm is_admin (Sheets)
+    if user_id != ADMIN_ID:
+        return await query.message.reply_text("❌ Bạn không có quyền thực hiện thao tác này!")
 
     admin_name = update.effective_user.full_name
 
@@ -444,6 +452,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     elif data == "show_list":
         await send_module_list(update, context)
+        
 async def handle_msg(u: Update, c: ContextTypes.DEFAULT_TYPE):
     if not u.message or not u.message.text or not u.message.text.startswith('/'): return
     cmd = u.message.text.replace("/", "").lower().split('@')[0].strip()
@@ -539,10 +548,10 @@ def api_generate():
     if not user_web or not date_web:
         return jsonify({"error": "Vui lòng nhập đủ thông tin!"}), 400
     
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
     try:
-        url = loop.run_until_complete(sync_github_files(user_web, date_web))
+        # SỬA: Chạy hàm sync_github_files thông qua loop đang chạy của bot app
+        future = asyncio.run_coroutine_threadsafe(sync_github_files(user_web, date_web), app.loop)
+        url = future.result() # Đợi lấy kết quả URL từ GitHub
         
         keyboard = InlineKeyboardMarkup([
             [
@@ -552,7 +561,6 @@ def api_generate():
         ])
 
         if app:
-            admin_id = "7346983056"
             msg = (
                 f"👑 <b>YÊU CẦU KÍCH HOẠT LOCKET GOLD</b>\n"
                 f"<i>Hệ thống ghi nhận yêu cầu mới</i>\n"
@@ -565,19 +573,22 @@ def api_generate():
                 f"<a href='{url}'>🌐 Xem mã nguồn tại đây</a>\n\n"
                 f"👉 <i>Nhấn nút dưới để xử lý nhanh.</i>"
             )
-            loop.run_until_complete(app.bot.send_message(
-                chat_id=admin_id, 
-                text=msg, 
-                parse_mode='HTML', 
-                reply_markup=keyboard,
-                disable_web_page_preview=True
-            ))
+            # SỬA: Gửi tin nhắn thông qua loop của bot để không gây treo hệ thống
+            asyncio.run_coroutine_threadsafe(
+                app.bot.send_message(
+                    chat_id=ADMIN_ID, 
+                    text=msg, 
+                    parse_mode='HTML', 
+                    reply_markup=keyboard,
+                    disable_web_page_preview=True
+                ),
+                app.loop
+            )
 
         return jsonify({"success": True, "url": url})
     except Exception as e:
+        logging.error(f"API Generate Error: {e}")
         return jsonify({"error": str(e)}), 500
-    finally:
-        loop.close()
         
 @server.route('/api/send_request', methods=['POST'])
 def api_send_request():
@@ -589,7 +600,7 @@ def api_send_request():
         return jsonify({"error": "Vui lòng nhập Username!"}), 400
     
     try:
-        admin_id = "7346983056"  # ID của bạn
+        # Sử dụng ADMIN_ID và gửi qua loop của bot
         msg = (
             f"👑 <b>YÊU CẦU KÍCH HOẠT LOCKET GOLD</b>\n"
             f"━━━━━━━━━━━━━━━━━━\n"
@@ -598,19 +609,18 @@ def api_send_request():
             f"━━━━━━━━━━━━━━━━━━\n"
             f"<i>Gửi từ Web Dashboard</i>"
         )
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        try:
-            loop.run_until_complete(app.bot.send_message(chat_id=admin_id, text=msg, parse_mode='HTML'))
-        finally:
-            loop.close()
+        
+        # Chạy lệnh gửi message trên luồng của Telegram App
+        asyncio.run_coroutine_threadsafe(
+            app.bot.send_message(chat_id=ADMIN_ID, text=msg, parse_mode='HTML'),
+            app.loop
+        )
 
         return jsonify({"success": True})
     except Exception as e:
         logging.error(f"API Send Request Error: {e}")
         return jsonify({"error": str(e)}), 500
-
-
+        
 @server.route('/api/nextdns_unified', methods=['POST'])
 def api_nextdns_unified():
     data = request.json
@@ -621,9 +631,12 @@ def api_nextdns_unified():
     
     try:
         xml_content = NEXTDNS_MOBILECONFIG.format(
-            dns_id=dns_id, uuid1=str(uuid.uuid4()).upper(), uuid2=str(uuid.uuid4()).upper()
+            dns_id=dns_id, 
+            uuid1=str(uuid.uuid4()).upper(), 
+            uuid2=str(uuid.uuid4()).upper()
         )
 
+        # Nếu có email, gửi thông báo duyệt cho Admin thông qua Loop của Bot
         if email and app:
             keyboard = InlineKeyboardMarkup([
                 [
@@ -631,7 +644,7 @@ def api_nextdns_unified():
                     InlineKeyboardButton("❌ Từ chối", callback_data=f"deny_dns:{dns_id}")
                 ]
             ])
-            admin_id = "7346983056"
+            
             msg = (
                 f"💎 <b>YÊU CẦU NEXTDNS PREMIUM</b>\n"
                 f"━━━━━━━━━━━━━━━━━━━━\n"
@@ -641,16 +654,21 @@ def api_nextdns_unified():
                 f"━━━━━━━━━━━━━━━━━━━━\n"
                 f"<i>Vui lòng nâng cấp tài khoản trước khi duyệt!</i>"
             )
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-            try:
-                loop.run_until_complete(app.bot.send_message(
-                    chat_id=admin_id, text=msg, parse_mode='HTML', reply_markup=keyboard
-                ))
-            finally: loop.close()
+            
+            # Chạy lệnh gửi message trên luồng của Telegram App
+            asyncio.run_coroutine_threadsafe(
+                app.bot.send_message(
+                    chat_id=ADMIN_ID, 
+                    text=msg, 
+                    parse_mode='HTML', 
+                    reply_markup=keyboard
+                ),
+                app.loop
+            )
 
         return jsonify({"success": True, "config": xml_content})
     except Exception as e:
+        logging.error(f"API NextDNS Error: {e}")
         return jsonify({"error": str(e)}), 500
         
 async def post_init(app):
