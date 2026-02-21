@@ -160,7 +160,7 @@ def is_admin(user_id: int) -> bool:
 def ensure_data_header(sheet):
     try:
         if sheet.row_values(1) != ["user_id", "username", "messages"]:
-            sheet.update([["user_id", "username", "messages"]], "A1:C1")
+            sheet.update("A1:C1", [["user_id", "username", "messages"]])
     except: pass
 async def auto_reg(u: Update, s_u, s_d):
     user = u.effective_user
@@ -702,8 +702,7 @@ if __name__ == "__main__":
     app.add_handler(CommandHandler("delmodule", del_mod))
     app.add_handler(CommandHandler("broadcast", broadcast))
     app.add_handler(CommandHandler("get", get_bundle))
-    app.add_handler(CommandHandler("myid", lambda u, c: u.message.reply_text(f"🆔 ID: `{u.effective_user.id}`", parse_mode=ParseMode.MARKDOWN)))  
-
+    app.add_handler(CommandHandler("myid", lambda u, c: asyncio.run_coroutine_threadsafe(u.message.reply_text(f"🆔 ID: <code>{u.effective_user.id}</code>", parse_mode=ParseMode.HTML), app.loop)))
     app.add_handler(CallbackQueryHandler(handle_callback))
     app.add_handler(MessageHandler(filters.COMMAND, handle_msg))
 
