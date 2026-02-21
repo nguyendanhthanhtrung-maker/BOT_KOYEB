@@ -20,7 +20,7 @@ from telegram.ext import (
     filters
 )
 from flask import Flask, render_template, request, jsonify
-
+ADMIN_ID = int(os.getenv("ADMIN_ID", "7346983056"))
 TOKEN = os.getenv("BOT_TOKEN") or os.getenv("TOKEN")
 SHEET_ID = os.getenv("SHEET_ID")
 GH_TOKEN = os.getenv("GH_TOKEN")
@@ -133,6 +133,9 @@ async def run_sync(func, *args):
     loop = asyncio.get_event_loop()
     return await loop.run_in_executor(None, func, *args)
 
+def is_admin(user_id):
+    return user_id == ADMIN_ID
+    
 def get_sheets():
     creds_raw = os.getenv("GOOGLE_CREDS")
     if not creds_raw: raise RuntimeError("Missing GOOGLE_CREDS")
@@ -358,22 +361,35 @@ async def send_email_to_admin(u: Update, c: ContextTypes.DEFAULT_TYPE):
     await u.message.reply_text("✅ Đã gửi Email cho Admin. Vui lòng đợi Admin phê duyệt.")
 
 async def approve_user(u: Update, c: ContextTypes.DEFAULT_TYPE):
-    if str(u.effective_user.id) != "7346983056": return
-    if not c.args: return await u.message.reply_text("⚠️ Cú pháp: /approve [user_id]")
+    if not is_admin(u.effective_user.id): return
+    
+    if not c.args: 
+        return await u.message.reply_text("⚠️ Cú pháp: /approve [user_id]")
     
     target_id = c.args[0].strip()
     shortcut_url = "https://www.icloud.com/shortcuts/ef6f685318484784940648ad520b5c4f"
+    
     try:
+        s_m, s_u, s_a, s_d = get_sheets()
+        s_a.append_row([target_id, datetime.now().strftime("%Y-%m-%d %H:%M:%S")])
+        
         msg = (
             "✅ <b>YÊU CẦU ĐÃ ĐƯỢC DUYỆT</b>\n\n"
             "Admin đã phê duyệt Email của bạn. Bây giờ bạn có thể gõ lệnh để lấy mã:\n"
-            "👉 <code>/nextdns [ID_của_bạn]</code>\n\n"
+            "👉 <code>/nextdns [ID_NextDNS_của_bạn]</code>\n\n"
             f"💡 Đừng quên cài sẵn <a href='{shortcut_url}'>Phím tắt này</a> để cài đặt nhanh!"
         )
-        await c.bot.send_message(chat_id=target_id, text=msg, parse_mode=ParseMode.HTML, disable_web_page_preview=True)
-        await u.message.reply_text(f"✅ Đã duyệt User: <code>{target_id}</code>", parse_mode=ParseMode.HTML)
+        
+        await c.bot.send_message(
+            chat_id=target_id, 
+            text=msg, 
+            parse_mode=ParseMode.HTML, 
+            disable_web_page_preview=True
+        )
+        await u.message.reply_text(f"✅ Đã duyệt và lưu User: <code>{target_id}</code>", parse_mode=ParseMode.HTML)
+        
     except Exception as e:
-        await u.message.reply_text(f"❌ Lỗi gửi tin: {e}")
+        await u.message.reply_text(f"❌ Lỗi xử lý: {e}")
 
 async def send_module_list(u: Update, c: ContextTypes.DEFAULT_TYPE):
     s_m, s_u, s_a, s_d = get_sheets()
@@ -414,25 +430,33 @@ async def handle_msg(u: Update, c: ContextTypes.DEFAULT_TYPE):
 
 async def stats(u: Update, c: ContextTypes.DEFAULT_TYPE):
     if not is_admin(u.effective_user.id): return
+    
     s_m, s_u, s_a, s_d = get_sheets()
+    
+    total_users = len(s_u.col_values(1)) - 1
+    total_modules = len(s_m.get_all_records())
+    total_admins = len(s_a.col_values(1)) - 1
+    
     await u.message.reply_text(
-        f"📊 <b>STATS</b>\n"
-        f"Users: {len(s_u.col_values(1))-1}\n"
-        f"Modules: {len(s_m.get_all_records())}\n"
-        f"Admin: {len(s_a.col_values(1))-1}", 
+        f"📊 <b>THỐNG KÊ HỆ THỐNG</b>\n\n"
+        f"👥 <b>Người dùng:</b> {total_users}\n"
+        f"📦 <b>Modules:</b> {total_modules}\n"
+        f"🛡️ <b>Quản trị viên:</b> {total_admins}", 
         parse_mode=ParseMode.HTML
     )
-
 async def set_link(u: Update, c: ContextTypes.DEFAULT_TYPE):
     if not is_admin(u.effective_user.id): return
     try:
         k, t, l = [a.strip() for a in " ".join(c.args).split("|")]
         s_m, _, _, _ = get_sheets()
         cell = s_m.find(k.lower(), in_column=1)
-        if cell: s_m.update(f'B{cell.row}:C{cell.row}', [[t, l]])
-        else: s_m.append_row([k.lower(), t, l])
-        await u.message.reply_text(f"✅ Đã lưu module: {t}")
-    except: await u.message.reply_text("❌ Cú pháp: /setlink key | Tên | URL")
+        if cell: 
+            s_m.update(f'B{cell.row}:C{cell.row}', [[t, l]])
+        else: 
+            s_m.append_row([k.lower(), t, l])
+        await u.message.reply_text(f"✅ Đã lưu module: <b>{t}</b>", parse_mode=ParseMode.HTML)
+    except: 
+        await u.message.reply_text("❌ Cú pháp: <code>/setlink key | Tên | URL</code>", parse_mode=ParseMode.HTML)
 
 async def del_mod(u: Update, c: ContextTypes.DEFAULT_TYPE):
     if not is_admin(u.effective_user.id) or not c.args: return
@@ -440,24 +464,37 @@ async def del_mod(u: Update, c: ContextTypes.DEFAULT_TYPE):
     cell = s_m.find(c.args[0].lower().strip(), in_column=1)
     if cell: 
         s_m.delete_rows(cell.row)
-        await u.message.reply_text(f"🗑 Đã xóa module: {c.args[0]}")
-    else: await u.message.reply_text("🔍 Không tìm thấy mã module.")
+        await u.message.reply_text(f"🗑 Đã xóa module: <b>{c.args[0]}</b>", parse_mode=ParseMode.HTML)
+    else: 
+        await u.message.reply_text("🔍 Không tìm thấy mã module.")
 
 async def broadcast(u: Update, c: ContextTypes.DEFAULT_TYPE):
     if not is_admin(u.effective_user.id): return
-    msg_parts = u.message.text_html.split(maxsplit=1)
-    if len(msg_parts) < 2: return await u.message.reply_text("⚠️ Nhập nội dung sau /broadcast")
-    msg = msg_parts[1]
-    _, s_u, _, _ = get_sheets()
-    users, count = s_u.col_values(1)[1:], 0
-    for uid in users:
+    msg = " ".join(c.args)
+    if not msg:
+        await u.message.reply_text("Sử dụng: /broadcast [nội dung]")
+        return
+    s_m, s_u, s_a, s_d = get_sheets()
+    users = s_u.col_values(1)[1:]
+    count = 0
+    for user_id in users:
         try:
-            await c.bot.send_message(uid, msg, parse_mode=ParseMode.HTML)
+            await c.bot.send_message(
+                chat_id=user_id, 
+                text=f"📢 <b>THÔNG BÁO</b>\n\n{msg}", 
+                parse_mode=ParseMode.HTML
+            )
             count += 1
             await asyncio.sleep(0.05)
-        except: pass
-    await u.message.reply_text(f"✅ Đã gửi tới {count} người.")
-
+        except: continue
+    await u.message.reply_text(f"✅ Đã gửi cho {count} người dùng.")
+    
+async def myid(u: Update, c: ContextTypes.DEFAULT_TYPE):
+    await u.message.reply_text(
+        f"🆔 ID của bạn: <code>{u.effective_user.id}</code>", 
+        parse_mode=ParseMode.HTML
+    )
+    
 server = Flask(__name__)
 
 @server.route('/')
@@ -545,21 +582,30 @@ def api_nextdns_unified():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-async def post_init(app):
-    await app.bot.set_my_commands([
-        BotCommand("start","Bắt đầu"), 
+async def post_init(application):
+    await application.bot.set_my_commands([
+        BotCommand("start", "Bắt đầu"),
         BotCommand("nextdns", "Tạo cấu hình NextDNS"),
-        BotCommand("send", "Gửi email cho Admin"),
-        BotCommand("list","Danh sách"), 
-        BotCommand("profile","Hồ sơ"), 
-        BotCommand("hdsd","Hướng dẫn"),
-        BotCommand("get", "Tạo Locket riêng")
+        BotCommand("list", "Danh sách Module"),
+        BotCommand("profile", "Hồ sơ của bạn"),
+        BotCommand("get", "Tạo Locket riêng"),
+        BotCommand("myid", "Lấy ID cá nhân"),
+        BotCommand("stats", "Thống kê (Admin)"),
+        BotCommand("broadcast", "Thông báo (Admin)"),
+        BotCommand("approve", "Duyệt Premium (Admin)"),
+        BotCommand("setlink", "Thêm Module (Admin)"),
+        BotCommand("delmodule", "Xóa Module (Admin)")
     ])
-
+    
 app = ApplicationBuilder().token(TOKEN).post_init(post_init).build()
 
 if __name__ == "__main__":
-    threading.Thread(target=lambda: server.run(host="0.0.0.0", port=PORT, use_reloader=False), daemon=True).start()
+    threading.Thread(
+        target=lambda: server.run(host="0.0.0.0", port=PORT, use_reloader=False), 
+        daemon=True
+    ).start()
+
+    app = ApplicationBuilder().token(TOKEN).post_init(post_init).build()
 
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("profile", profile))
@@ -573,7 +619,9 @@ if __name__ == "__main__":
     app.add_handler(CommandHandler("delmodule", del_mod))
     app.add_handler(CommandHandler("broadcast", broadcast))
     app.add_handler(CommandHandler("get", get_bundle))
-    app.add_handler(CommandHandler("myid", lambda u, c: u.message.reply_text(f"🆔 ID: `{u.effective_user.id}`", parse_mode=ParseMode.MARKDOWN)))  
+
+    app.add_handler(CommandHandler("myid", myid))
+
     app.add_handler(CallbackQueryHandler(lambda u, c: send_module_list(u, c) if u.callback_query.data == "show_list" else None))
     app.add_handler(MessageHandler(filters.COMMAND, handle_msg))
 
