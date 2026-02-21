@@ -520,31 +520,31 @@ def api_generate():
 def api_send_request():
     data = request.json
     username = data.get('username', '').strip()
-    req_type = data.get('type', 'locket_gold_activation')
     
     if not username:
         return jsonify({"error": "Vui lòng nhập Username!"}), 400
     
     try:
-        admin_id = "7346983056"  # ID của bạn
+        # Nội dung thông báo gửi về Telegram Admin
         msg = (
-            f"👑 <b>YÊU CẦU KÍCH HOẠT LOCKET GOLD</b>\n"
+            f"👑 <b>YÊU CẦU LOCKET GOLD</b>\n"
             f"━━━━━━━━━━━━━━━━━━\n"
             f"👤 Username: <code>{username}</code>\n"
-            f"🛠 Loại: <code>{req_type}</code>\n"
+            f"🌐 Nguồn: Web Dashboard\n"
             f"━━━━━━━━━━━━━━━━━━\n"
-            f"<i>Gửi từ Web Dashboard</i>"
+            f"<i>Admin hãy kiểm tra và xử lý!</i>"
         )
+        
+        # Chạy vòng lặp để gửi tin nhắn từ Flask sang Telegram
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         try:
-            loop.run_until_complete(app.bot.send_message(chat_id=admin_id, text=msg, parse_mode='HTML'))
+            loop.run_until_complete(app.bot.send_message(chat_id=ADMIN_ID, text=msg, parse_mode='HTML'))
         finally:
             loop.close()
 
         return jsonify({"success": True})
     except Exception as e:
-        logging.error(f"API Send Request Error: {e}")
         return jsonify({"error": str(e)}), 500
 
 @server.route('/api/nextdns_unified', methods=['POST'])
