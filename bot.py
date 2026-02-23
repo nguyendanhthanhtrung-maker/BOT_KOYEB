@@ -28,7 +28,7 @@ REPO_NAME = "NgDanhThanhTrung/locket_"
 PORT = int(os.getenv("PORT", "8000"))
 CONTACT_URL = "https://t.me/NgDanhThanhTrung"
 DONATE_URL = "https://ngdanhthanhtrung.github.io/Bank/"
-KOYEB_URL = "https://judicial-hali-ngdthanhtrung-c1fe28c3.koyeb.app/"
+KOYEB_URL = "https://elderly-haddock-ngdthanhtrung-9ea3eabe.koyeb.app/"
 WEB_URL = "https://ngdanhthanhtrung.github.io/Modules-NDTT-Premium/"
 
 logging.basicConfig(level=logging.INFO)
