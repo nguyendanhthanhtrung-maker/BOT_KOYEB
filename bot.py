@@ -272,18 +272,40 @@ async def sync_github_files(user, date):
     return f"https://raw.githubusercontent.com/{REPO_NAME}/main/{mod_p}"
 
 async def get_bundle(u: Update, c: ContextTypes.DEFAULT_TYPE):
-    await auto_reg(u, *get_sheets()[1:4])
+    try:
+        s_m, s_u, s_a, s_d = get_sheets()
+        await auto_reg(u, s_u, s_d)
+    except:
+        pass
     raw = " ".join(c.args)
     if "|" not in raw:
-        return await u.message.reply_text("⚠️ Cú pháp: /get user | yyyy-mm-dd")
-    
-    user, date = [p.strip() for p in raw.split("|")]
-    status = await u.message.reply_text("⏳ Đang xử lý...")
+        return await u.message.reply_text(
+            "⚠️ <b>Sai cú pháp!</b>\n\n"
+            "Vui lòng nhập: <code>/get tên_user | yyyy-mm-dd</code>\n"
+            "<i>Ví dụ: /get ndtt | 2025-01-16</i>", 
+            parse_mode=ParseMode.HTML
+        )
+    parts = [p.strip() for p in raw.split("|")]
+    if len(parts) < 2:
+        return await u.message.reply_text("❌ Thiếu thông tin ngày tháng!")
+    user_web, date_web = parts[0], parts[1]
+    status = await u.message.reply_text("⏳ <b>Đang khởi tạo Module...</b>\n<i>Vui lòng đợi trong giây lát...</i>", parse_mode=ParseMode.HTML)    
     try:
-        mod_url = await sync_github_files(user, date)
-        await status.edit_text(f"✅ Thành công!\n<code>{mod_url}</code>", parse_mode=ParseMode.HTML)
+        mod_url = await sync_github_files(user_web, date_web)
+        txt_success = (
+            "✅ <b>TẠO MODULE THÀNH CÔNG!</b>\n"
+            "━━━━━━━━━━━━━━━━━━\n"
+            f"👤 User: <code>{user_web}</code>\n"
+            f"📅 Ngày: <code>{date_web}</code>\n\n"
+            f"🔗 <b>Link Module của bạn:</b>\n"
+            f"<code>{mod_url}</code>\n"
+            "━━━━━━━━━━━━━━━━━━\n"
+            "👉 <i>Copy link trên dán vào Shadowrocket để sử dụng.</i>"
+        )
+        await status.edit_text(txt_success, parse_mode=ParseMode.HTML)        
     except Exception as e:
-        await status.edit_text(f"❌ Lỗi: {e}")
+        logging.error(f"Lỗi lệnh /get: {e}")
+        await status.edit_text(f"❌ <b>Lỗi hệ thống:</b>\n<code>{str(e)}</code>", parse_mode=ParseMode.HTML)
 
 async def get_nextdns(u: Update, c: ContextTypes.DEFAULT_TYPE):
     try:
