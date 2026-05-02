@@ -1,5 +1,5 @@
 python-telegram-bot
-gspread
-oauth2client
 PyGithub
+pandas
+openpyxl
 flask
